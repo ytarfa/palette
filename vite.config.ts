@@ -15,7 +15,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "packages/sdk/src/**/*.test.ts"],
   },
   build: {
     emptyOutDir: false,

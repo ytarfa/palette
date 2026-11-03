@@ -17,6 +17,7 @@ import {
   type ToPalette,
   type ToPlugin,
 } from "./protocol.js"
+import { parseRequest } from "./request.js"
 
 export * from "./protocol.js"
 
@@ -144,8 +145,10 @@ export function definePalettePlugin(definition: PluginDefinition): PalettePlugin
     }
   }
 
-  chrome.runtime.onMessageExternal.addListener((message: ToPlugin, sender, sendResponse) => {
-    if (sender.id !== paletteId || message?.palette !== PROTOCOL) return
+  chrome.runtime.onMessageExternal.addListener((raw: unknown, sender, sendResponse) => {
+    // Anything can claim Palette's ID while it's unpacked, so drop malformed requests.
+    const message = sender.id === paletteId ? parseRequest(raw) : undefined
+    if (!message) return
     handle(message).then(sendResponse, (error) => sendResponse({ error: String(error) }))
     return true // Respond asynchronously.
   })
