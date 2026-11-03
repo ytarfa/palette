@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="readme.css" />
+    <style>
+      body {
+        width: 1280px;
+        height: 800px;
+      }
+      /* Cut off by the bottom edge. */
+      .window {
+        width: 1040px;
+        height: 600px;
+        margin: 44px auto 0;
+        border-radius: 14px 14px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="caption">
+      <h1>Close the tabs you forgot about.</h1>
+      <p>See what hasn’t been used in a day, a week or a month, then close it in one go.</p>
+    </header>
+    <div class="window">
+      <div class="toolbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url">vite.dev/guide</div>
+        <div class="ext"><img src="/icons/128.png" alt="" /></div>
+      </div>
+      <div class="viewport">
+        <div class="page">
+          <small>Guide</small>
+          <h2>Getting started</h2>
+          <p>Vite is a build tool that aims to provide a faster and leaner development experience for modern web projects. It has two major parts: a dev server with rich built-in features, and a build command that bundles your code for production.</p>
+          <p>To scaffold a project, run <code>npm create vite@latest</code> and follow the prompts. Then pick a framework and a variant, and start the dev server with <code>npm run dev</code>.</p>
+        </div>
+        <iframe></iframe>
+      </div>
+    </div>
+    <script src="readme.js"></script>
+  </body>
+</html>
