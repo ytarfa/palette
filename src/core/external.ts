@@ -21,18 +21,59 @@ export interface StoredPlugin extends Registration {
   updatedAt: number
 }
 
-const KEY = "externalPlugins"
+/** Each plugin has its own key, so one plugin can't make the others' writes fail. */
+const PREFIX = "externalPlugin:"
 const MODES = ["tabs", "commands"]
 
-export async function getPlugins(): Promise<StoredPlugin[]> {
-  const { [KEY]: plugins = {} } = await chrome.storage.local.get(KEY)
-  return Object.values(plugins as Record<string, StoredPlugin>)
+/** Limits on what a plugin may store, before it's approved or not. */
+export const MAX_ICON = 16_000
+export const MAX_REGISTRATION = 256_000
+
+const key = (id: string) => PREFIX + id
+
+async function readPlugins(): Promise<Record<string, StoredPlugin>> {
+  const all = await chrome.storage.local.get(null)
+  return Object.fromEntries(
+    Object.entries(all)
+      .filter(([k]) => k.startsWith(PREFIX))
+      .map(([k, plugin]) => [k.slice(PREFIX.length), plugin as StoredPlugin]),
+  )
+}
+
+// Sources call getPlugins() on every keystroke, so the list is kept in memory
+// until storage changes.
+let cache: Promise<StoredPlugin[]> | undefined
+let watching = false
+
+export function getPlugins(): Promise<StoredPlugin[]> {
+  if (!watching) {
+    watching = true
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && Object.keys(changes).some((k) => k.startsWith(PREFIX))) cache = undefined
+    })
+  }
+  if (!cache) {
+    const read = readPlugins().then(Object.values)
+    cache = read
+    read.catch(() => {
+      if (cache === read) cache = undefined
+    })
+  }
+  return cache
 }
 
 async function update(fn: (plugins: Record<string, StoredPlugin>) => void) {
-  const { [KEY]: plugins = {} } = await chrome.storage.local.get(KEY)
-  fn(plugins as Record<string, StoredPlugin>)
-  await chrome.storage.local.set({ [KEY]: plugins })
+  const before = await readPlugins()
+  const plugins = structuredClone(before)
+  fn(plugins)
+  const removed = Object.keys(before).filter((id) => !(id in plugins))
+  const changed = Object.entries(plugins).filter(([id, p]) => JSON.stringify(p) !== JSON.stringify(before[id]))
+  try {
+    if (removed.length) await chrome.storage.local.remove(removed.map(key))
+    if (changed.length) await chrome.storage.local.set(Object.fromEntries(changed.map(([id, p]) => [key(id), p])))
+  } finally {
+    cache = undefined
+  }
   await updateBadge()
 }
 
@@ -81,7 +122,9 @@ const text = (value: unknown, max: number) =>
 
 /** Icons may only be inline images or files from the plugin itself, so they can't track the user. */
 function icon(value: unknown, pluginId: string) {
-  const url = text(value, 100_000)
+  // Dropped rather than cut: a cut data: URL is a broken image.
+  if (typeof value === "string" && value.length > MAX_ICON) return undefined
+  const url = text(value, MAX_ICON)
   if (url?.startsWith("data:image/") || url?.startsWith(`chrome-extension://${pluginId}/`)) return url
   return undefined
 }
@@ -115,6 +158,27 @@ export function cleanItems(raw: unknown, pluginId: string): ItemData[] {
     .slice(0, 500)
     .map((item) => cleanItem(item, pluginId))
     .filter((item) => item !== undefined)
+}
+
+/** Why a registration is too large to store, if it is. Checked before cleaning it. */
+export function registrationError(raw: unknown): string | undefined {
+  let size: number
+  try {
+    size = new TextEncoder().encode(JSON.stringify(raw) ?? "").length
+  } catch {
+    return "Invalid registration"
+  }
+  if (size > MAX_REGISTRATION) {
+    return `Registration is too large (${Math.ceil(size / 1000)} KB, the limit is ${MAX_REGISTRATION / 1000} KB)`
+  }
+  const commands = (raw as { commands?: unknown } | null)?.commands
+  for (const command of Array.isArray(commands) ? commands : []) {
+    const { id, icon } = (command ?? {}) as Record<string, unknown>
+    if (typeof icon === "string" && icon.length > MAX_ICON) {
+      return `Icon of command “${String(id).slice(0, 100)}” is too large (the limit is ${MAX_ICON / 1000} KB)`
+    }
+  }
+  return undefined
 }
 
 export function cleanRegistration(raw: unknown, pluginId: string): Registration | undefined {
