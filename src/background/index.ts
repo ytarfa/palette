@@ -5,7 +5,15 @@
  */
 import { PROTOCOL, type RegisterResponse, type ToPalette } from "@palette/sdk"
 import { cleanRegistration, removePlugin, savePlugin, updateBadge } from "@/core/external"
-import { PENDING_MODE_KEY, type FallbackMessage, type ModeId, type OpenMessage } from "@/shared/messages"
+import {
+  PENDING_MODE_KEY,
+  type ClaimFrameMessage,
+  type FallbackMessage,
+  type ModeId,
+  type OpenMessage,
+  type RegisterFrameMessage,
+} from "@/shared/messages"
+import { claimFrame, forgetFrame, registerFrame } from "./frames"
 
 const COMMAND_MODES: Record<string, ModeId> = {
   "open-tabs": "tabs",
@@ -35,9 +43,23 @@ chrome.commands.onCommand.addListener((command, tab) => {
   if (mode) void openPalette(mode, tab)
 })
 
-chrome.runtime.onMessage.addListener((message: FallbackMessage) => {
-  if (message?.type === "palette:fallback") void openPopup(message.mode)
-})
+chrome.runtime.onMessage.addListener(
+  (message: FallbackMessage | RegisterFrameMessage | ClaimFrameMessage, sender, sendResponse) => {
+    if (message?.type === "palette:fallback") void openPopup(message.mode)
+    const tabId = sender.tab?.id
+    if (tabId == null) return
+    if (message?.type === "palette:register-frame") {
+      void registerFrame(tabId, message.token).then(() => sendResponse(true))
+      return true
+    }
+    if (message?.type === "palette:claim-frame") {
+      void claimFrame(tabId).then(sendResponse)
+      return true
+    }
+  },
+)
+
+chrome.tabs.onRemoved.addListener((tabId) => void forgetFrame(tabId))
 
 // Tabs opened before install (or before an extension reload) don't have the
 // content script yet. Inject it so they get the in-page palette instead of the popup.
