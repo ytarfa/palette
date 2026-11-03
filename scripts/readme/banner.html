@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="readme.css" />
+    <style>
+      body {
+        width: 1280px;
+        height: 560px;
+      }
+      .layout {
+        display: flex;
+        align-items: center;
+        gap: 64px;
+        height: 100%;
+        padding: 0 64px 0 96px;
+      }
+      .intro {
+        flex: 1;
+      }
+      .intro img {
+        width: 72px;
+        height: 72px;
+        border-radius: 17px;
+      }
+      .dark .intro img {
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+      }
+      .intro h1 {
+        margin: 26px 0 0;
+        font-size: 46px;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+      }
+      .intro p {
+        margin: 14px 0 0;
+        color: #86868b;
+        font-size: 20px;
+        line-height: 1.45;
+      }
+      .pills {
+        display: flex;
+        gap: 8px;
+        margin-top: 28px;
+      }
+      .pills span {
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: #e8e8ea;
+        color: #57575c;
+        font-size: 13px;
+      }
+      .dark .pills span {
+        background: #232326;
+        color: #a1a1a6;
+      }
+      .window {
+        flex: none;
+        width: 600px;
+        height: 480px;
+      }
+      .page {
+        padding: 28px 36px;
+      }
+      /* Would peek out under the palette. */
+      .page p:last-child {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="intro">
+        <img src="/icons/128.png" alt="" />
+        <h1>Palette</h1>
+        <p>A command palette for Chrome. Switch tabs<br />and run commands without the mouse.</p>
+        <div class="pills"><span>Chrome extension</span><span>Keyboard first</span><span>Extensible</span></div>
+      </div>
+      <div class="window">
+        <div class="toolbar">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="url">vite.dev/guide</div>
+          <div class="ext"><img src="/icons/128.png" alt="" /></div>
+        </div>
+        <div class="viewport">
+          <div class="page">
+            <small>Guide</small>
+            <h2>Getting started</h2>
+            <p>Vite is a build tool that aims to provide a faster and leaner development experience for modern web projects. It has two major parts: a dev server with rich built-in features, and a build command that bundles your code for production.</p>
+            <p>To scaffold a project, run <code>npm create vite@latest</code> and follow the prompts. Then pick a framework and a variant, and start the dev server with <code>npm run dev</code>.</p>
+            <p>Vite is opinionated and comes with sensible defaults out of the box, but is also highly extensible through its plugin API and JavaScript API with full typing support.</p>
+          </div>
+          <iframe></iframe>
+        </div>
+      </div>
+    </div>
+    <script src="readme.js"></script>
+  </body>
+</html>
