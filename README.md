@@ -359,8 +359,11 @@ docs/                  README banners, screenshots and demo GIFs
 ### Continuous integration and releases
 
 - **Pull requests** run lint, typecheck, tests and both builds ([`ci.yml`](.github/workflows/ci.yml)). A pull request can't be merged into `main` until they pass.
-- **Every push to `main`** that changes the extension runs the same checks, then publishes a release with the built extension as `palette.zip` ([`release.yml`](.github/workflows/release.yml)). Pushes that only touch docs don't release. A release can also be started by hand from the Actions tab.
-- **Versions** are `major.minor.patch`: major and minor come from `public/manifest.json`, so bump those there for a bigger release. The patch number counts up on each release, and the release's `manifest.json` gets the full version.
+- **Releases** start from a version tag on `main`. Merging to `main` doesn't release.
+  1. **Tag:** `git tag v1.2.3 && git push origin v1.2.3`. This runs the same checks, then publishes a **pre-release** with the built extension as `palette.zip` ([`release.yml`](.github/workflows/release.yml)). Pre-releases don't count as the latest release, so the download link above doesn't change yet.
+  2. **Test** the pre-release's `palette.zip`.
+  3. **Promote:** run the Promote workflow from the Actions tab with the tag ([`promote.yml`](.github/workflows/promote.yml)). It makes that pre-release the latest release, without rebuilding.
+- **Versions** come from the tag (`major.minor.patch`), which is written into the release's `manifest.json`.
 
 ### Working on it
 

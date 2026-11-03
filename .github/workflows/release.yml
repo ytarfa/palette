@@ -1,20 +1,17 @@
 name: Release
 
-# Every push to main that changes the extension becomes a release, with the
-# built extension attached as palette.zip. The README links to
-# releases/latest/download/palette.zip.
+# Pushing a version tag (v1.2.3) builds the extension at that tag and publishes
+# it as a pre-release, with the built extension attached as palette.zip. Test
+# it, then run the Promote workflow (promote.yml) to make it the latest release.
+# The README links to releases/latest/download/palette.zip, which skips
+# pre-releases, so nothing reaches users until it's promoted.
 #
-# Version: major.minor from public/manifest.json (bump those by hand), patch
-# counted up from the previous release's tag.
+# The tag is the version: it's written into the built manifest.json.
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "scripts/readme/**"
-  workflow_dispatch:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 concurrency:
   group: release
@@ -32,7 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # tags, for the next version number
+          fetch-depth: 0 # main, to check the tag is on it
+
+      - name: Check the tag is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME isn't on main. Tag a commit from main."
+            exit 1
+          fi
 
       - uses: pnpm/action-setup@v6
 
@@ -43,32 +47,25 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Pick the version
-        id: version
-        run: |
-          base=$(jq -r .version public/manifest.json | cut -d. -f1,2)
-          last=$(git tag --list "v$base.*" --sort=-v:refname | head -n1)
-          if [ -z "$last" ]; then patch=0; else patch=$(( ${last##*.} + 1 )); fi
-          echo "version=$base.$patch" >> "$GITHUB_OUTPUT"
-          echo "Releasing $base.$patch (previous: ${last:-none})"
-
       - name: Build
         run: pnpm build
 
       - name: Package
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ github.ref_name }}
         run: |
+          VERSION=${VERSION#v}
           jq --arg v "$VERSION" '.version = $v' dist/manifest.json > manifest.tmp && mv manifest.tmp dist/manifest.json
           (cd dist && zip -qr ../palette.zip .)
           cp palette.zip "palette-$VERSION.zip"
 
-      - name: Create release
+      - name: Create pre-release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ github.ref_name }}
         run: |
-          gh release create "v$VERSION" palette.zip "palette-$VERSION.zip" \
-            --target "$GITHUB_SHA" \
-            --title "Palette $VERSION" \
+          gh release create "$TAG" palette.zip "palette-${TAG#v}.zip" \
+            --verify-tag \
+            --prerelease \
+            --title "Palette ${TAG#v}" \
             --generate-notes
