@@ -32,7 +32,8 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 
 - **Tab switcher.** Fuzzy search every open tab across all your windows, most recently used first. Hold ⌘⇧ and tap P to walk down the list, then let go to switch, just like in VS Code.
 - **Commands.** About 30 actions for tabs, pages and windows: duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, copy the URL as a Markdown link, zoom, and more. Chrome's own shortcuts are shown next to them, so you learn them as you go.
-- **Site commands.** On GitHub, jump to a repo's issues, pull requests or actions, copy a pull request as a Markdown link, or copy its `gh pr checkout` command.
+- **Site commands.** Commands for the site you're on, for 19 sites: GitHub, Jira, Google Docs, YouTube and more. Turn each one on or off in settings.
+- **Page tools.** On any page: copy the URL without tracking parameters, go up a level, open it in the Wayback Machine, search the site.
 - **Open or search anything.** Type a domain to open it, or any text to search with your default search engine.
 - **Isolated from the page.** The palette runs in its own frame, so site styles can't break it and it can't break the site.
 - **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
@@ -71,7 +72,7 @@ On Windows and Linux, use Ctrl instead of ⌘. You can change both shortcuts at 
 
 ## Site commands
 
-When you're on a site Palette knows, its commands show up at the top of ⌘⇧K. For now that's GitHub:
+When you're on a site Palette knows, its commands show up at the top of ⌘⇧K:
 
 <p align="center">
   <picture>
@@ -80,15 +81,51 @@ When you're on a site Palette knows, its commands show up at the top of ⌘⇧K.
   </picture>
 </p>
 
-| Where | Commands |
+| Site | |
 | --- | --- |
-| Anywhere on GitHub | Your pull requests, your issues, notifications, dashboard, new repository |
-| A repository | Code, issues, pull requests, actions, releases, branches, settings, new issue, new pull request, open in github.dev, copy clone URL (HTTPS or SSH) |
-| A pull request | Files changed, commits, checks, copy as Markdown link, copy `gh pr checkout` command |
-| An issue | Copy as Markdown link |
-| While typing | Search the repository's code, or all of GitHub |
+| Amazon | Copy clean product links, check price history and reviews, jump to orders and cart |
+| AWS Console | Switch regions, jump to common services, copy region codes and Lambda function names |
+| Confluence | Edit pages, view page history, copy page links and jump to spaces |
+| Figma | Copy clean file and selection links, switch to Dev Mode, present prototypes |
+| GitHub | Jump around repositories, copy pull request links and checkout commands |
+| GitLab | Jump around projects, copy merge request links and checkout commands (self-hosted too) |
+| Google Docs | Download documents, spreadsheets and slides in any format, make a copy, copy clean links |
+| Google Search | Filter results by date, switch tabs, and run the same search elsewhere |
+| HubSpot | Jump to CRM lists, tasks and inbox, copy record IDs and links |
+| Jira | Copy issue keys, branch names and links, jump to boards, backlogs and searches |
+| Linear | Copy issue links and branch names, jump to your team's issues and cycles |
+| Localhost | Switch ports, protocol and host on local dev servers |
+| Netlify | Jump between project pages, open the live site and deploy permalinks |
+| Notion | Copy clean page links, page IDs and Markdown links, open pages in the desktop app |
+| npm | Copy install commands, jump to package tabs, check bundle size and security |
+| Reddit | Copy clean post links, switch to old Reddit, sort and search subreddits |
+| Vercel | Jump between project and team pages, copy deployment IDs |
+| X | Copy clean post links and IDs, jump to profile tabs, search a user's posts |
+| YouTube | Copy short and timestamped video links, change playback speed, open Shorts as regular videos |
 
-<kbd>⌘</kbd><kbd>↵</kbd> opens a page in a new tab instead. Everything comes from the tab's address and title, so it needs no extra permissions and never reads the page. Each site is a plugin in [`src/plugins/sites`](src/plugins/sites), so adding Linear, Jira or Notion works the same way.
+<kbd>⌘</kbd><kbd>↵</kbd> opens a page in a new tab instead. Almost everything comes from the tab's address and title, so site commands need no extra permissions and keep working when a site changes its design. The exceptions are YouTube's playback speed and current-time link, which read the video player.
+
+Every site can be turned on or off in **Palette settings** (in ⌘⇧K, or right-click the toolbar icon → Options).
+
+### Adding a site
+
+Each site is one file in [`src/plugins/sites`](src/plugins/sites), picked up automatically. [`github.ts`](src/plugins/sites/github.ts) is a good template, and [`site-kit.ts`](src/plugins/site-kit.ts) has the helpers:
+
+```ts
+export default defineSite({
+  id: "example",
+  name: "Example",
+  description: "Jump to the dashboard, copy item links",
+  url: "https://example.com",
+  matches: (url) => url.hostname === "example.com",
+  commands: ({ url, tab }) => [
+    navigate("dashboard", "Dashboard", "https://example.com/dashboard", { icon: LayoutDashboard }),
+    copy("copy-link", "Copy clean link", url.origin + url.pathname, { icon: Link }),
+  ],
+})
+```
+
+Add a test next to it ([`github.test.ts`](src/plugins/sites/github.test.ts) shows how) and run `pnpm test`.
 
 ## Plugins
 
@@ -224,6 +261,8 @@ src/content/           Content script: shows and hides the palette frame
 src/palette/           The palette UI (palette.html), in the page frame or the popup
 src/core/              Plugin API, registry, modes and keyboard helpers
 src/plugins/           Everything the palette lists
+src/plugins/sites/     One file per site, registered automatically
+src/options/           Settings page (options.html)
 src/config/            Chrome's default shortcuts, shown next to commands
 src/components/ui/     shadcn/ui components
 packages/sdk/          @palette/sdk, for plugins in other extensions
@@ -237,6 +276,7 @@ docs/                  README banners and screenshots
 | `pnpm dev` | Rebuilds `dist/` on every change |
 | `pnpm build` | Builds the SDK, typechecks, then builds `dist/` |
 | `pnpm --filter palette-toolbox build` | Builds the example plugin into `examples/toolbox/dist/` |
+| `pnpm test` | Runs the tests (Vitest) |
 | `pnpm lint` | Lints with oxlint |
 | `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome, using the real palette from `dist/` and a set of demo tabs |
 
