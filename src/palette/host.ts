@@ -18,6 +18,23 @@ export function closePalette() {
   else window.close()
 }
 
+/** See `PaletteContext.conceal`. Gives up waiting after a second, e.g. if the page is frozen. */
+export function concealPalette(): Promise<void> {
+  if (!embedded) return Promise.resolve()
+  return new Promise((resolve) => {
+    const done = () => {
+      off()
+      clearTimeout(timer)
+      resolve()
+    }
+    const off = onHostMessage((message) => {
+      if (message.type === "concealed") done()
+    })
+    const timer = setTimeout(done, 1000)
+    post({ type: "conceal" })
+  })
+}
+
 export function onHostMessage(listener: (message: ToFrame) => void) {
   const handler = (e: MessageEvent) => {
     if (e.source !== window.parent || e.data?.palette !== token) return

@@ -69,6 +69,7 @@ function show() {
   if (!host || !frame) return
   visible = true
   host.style.display = "block"
+  unconceal()
   frame.focus()
   post({ type: "focus" })
 }
@@ -77,8 +78,26 @@ function hide() {
   if (!host || !visible) return
   visible = false
   host.style.display = "none"
+  unconceal()
   if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true })
   previousFocus = null
+}
+
+/**
+ * Make the palette invisible while keeping the frame focused (display: none
+ * would blur it, and the clipboard needs focus). Replies once the page has
+ * repainted, so a screenshot taken then won't include the palette.
+ */
+function conceal() {
+  if (!host) return
+  host.style.opacity = "0"
+  host.style.pointerEvents = "none"
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => post({ type: "concealed" }), 50)))
+}
+
+function unconceal() {
+  host?.style.removeProperty("opacity")
+  host?.style.removeProperty("pointer-events")
 }
 
 function onFrameMessage(e: MessageEvent) {
@@ -97,6 +116,9 @@ function onFrameMessage(e: MessageEvent) {
       break
     case "close":
       hide()
+      break
+    case "conceal":
+      conceal()
       break
   }
 }

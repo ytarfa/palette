@@ -17,7 +17,7 @@ import { collect, type Registry } from "@/core/registry"
 import { getSettings, type Settings } from "@/core/settings"
 import type { Command as Item, Icon, PaletteContext, RunResult } from "@/core/types"
 import { cn } from "@/lib/utils"
-import { closePalette, copyText, embedded, onHostMessage, post, takePendingMode } from "./host"
+import { closePalette, concealPalette, copyText, embedded, onHostMessage, post, takePendingMode } from "./host"
 
 /** A nested list pushed by an item with `children`. */
 interface Page {
@@ -70,7 +70,7 @@ export function Palette({ registry }: { registry: Registry }) {
 
   const mode = registry.mode(modeId)
   const page = pages.at(-1)
-  const ctx: PaletteContext = { tab, query, copy: copyText }
+  const ctx: PaletteContext = { tab, query, copy: copyText, conceal: concealPalette }
 
   const items = useMemo(
     () => (page ? staticItems : [...staticItems, ...dynamicItems]),

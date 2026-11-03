@@ -18,12 +18,16 @@ export interface FallbackMessage {
 export type ToFrame =
   | { type: "open"; mode: ModeId }
   | { type: "focus" }
+  /** Reply to "conceal", once the page has repainted without the palette. */
+  | { type: "concealed" }
 
 /** palette frame → content script (window.postMessage) */
 export type FromFrame =
   | { type: "ready" }
   | { type: "show" }
   | { type: "close" }
+  /** Make the palette invisible but keep it focused, e.g. for a screenshot. Undone on close. */
+  | { type: "conceal" }
 
 /** Key in chrome.storage.session telling the popup which mode to open in. */
 export const PENDING_MODE_KEY = "pendingMode"

@@ -1,7 +1,7 @@
 import shortcuts from "@/config/shortcuts.json"
 import { isMac } from "./keys"
 import { COMMANDS, TABS } from "./modes"
-import { isEnabled, type Settings } from "./settings"
+import { isCommandEnabled, isEnabled, type Settings } from "./settings"
 import type { Command, Mode, PaletteContext, Plugin, Source } from "./types"
 
 export interface Registry {
@@ -17,12 +17,11 @@ export interface Registry {
 export function createRegistry(plugins: Plugin[]): Registry {
   const modes: Mode[] = [TABS, COMMANDS, ...plugins.flatMap((p) => p.modes ?? [])]
   const sources = plugins.flatMap((plugin) => {
-    const own = plugin.sources ?? []
+    const own = (plugin.sources ?? []).map((source) => ({ plugin, source: namespaced(plugin, source), toggleable: false }))
     const commands = plugin.commands ?? []
-    const all = commands.length
-      ? [...own, { mode: COMMANDS.id, items: () => commands }]
-      : own
-    return all.map((source) => ({ plugin, source: namespaced(plugin, source) }))
+    if (!commands.length) return own
+    const source = namespaced(plugin, { mode: COMMANDS.id, items: () => commands })
+    return [...own, { plugin, source, toggleable: true }]
   })
 
   return {
@@ -36,7 +35,7 @@ export function createRegistry(plugins: Plugin[]): Registry {
     sources: (modeId, settings) =>
       sources
         .filter(({ plugin, source }) => source.mode === modeId && isEnabled(plugin, settings))
-        .map(({ source }) => source),
+        .map(({ source, toggleable }) => (toggleable ? onlyEnabled(source, settings) : source)),
   }
 }
 
@@ -64,6 +63,17 @@ function namespaced(plugin: Plugin, source: Source): Source {
           const id = `${plugin.id}:${item.id}`
           return { ...item, id, shortcut: item.shortcut ?? configuredShortcut(id) }
         })
+    },
+  }
+}
+
+/** Drop static commands the user turned off in settings. */
+function onlyEnabled(source: Source, settings: Settings): Source {
+  return {
+    ...source,
+    async items(ctx) {
+      const items = await source.items(ctx)
+      return items.filter((item) => isCommandEnabled(item.id, item, settings))
     },
   }
 }
