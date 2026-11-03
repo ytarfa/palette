@@ -35,7 +35,7 @@ A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 | `title`, `subtitle` | What's shown in the list |
 | `icon` | A `data:image/...` URL, or a `chrome-extension://<your id>/...` file listed in your `web_accessible_resources` |
 | `keywords` | Extra words to match when searching |
-| `group` | Group heading. Defaults to your plugin's name |
+| `group` | Shown after your plugin's name in the group heading, e.g. "My plugin · Email". Built-in names like "Tabs" are ignored |
 | `hint` | Muted text on the right |
 | `shortcut` | Shortcut shown next to the command, e.g. `"mod+shift+u"`. Display only |
 | `alwaysShow` | Show regardless of what's typed |
@@ -49,7 +49,7 @@ A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 Service workers can't use the clipboard, and Palette closes after a command runs. Return an effect to have Palette do the last step:
 
 ```ts
-run: () => ({ copy: "text" })                        // copy to the clipboard
+run: () => ({ copy: "text" })                        // copy to the clipboard (up to 100,000 characters)
 run: () => ({ open: "https://example.com" })         // open in the current tab
 run: () => ({ open: "https://...", newTab: true })   // or in a new tab
 run: () => ({ keepOpen: true })                      // stay open and reload the list

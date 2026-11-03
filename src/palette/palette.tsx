@@ -1,5 +1,5 @@
 import { defaultFilter } from "cmdk"
-import { ChevronRight, Globe, SquareChevronRight } from "lucide-react"
+import { Check, ChevronRight, Globe, Puzzle, SquareChevronRight } from "lucide-react"
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import {
   Command,
@@ -61,12 +61,15 @@ export function Palette({ registry }: { registry: Registry }) {
   const [settings, setSettings] = useState<Settings>()
   const [staticItems, setStaticItems] = useState<Item[]>([])
   const [dynamicItems, setDynamicItems] = useState<Item[]>([])
+  /** Feedback from the last run, e.g. "Copied by …", in the footer. */
+  const [notice, setNotice] = useState<string>()
 
   const visible = useRef(!embedded)
   /** Holding ⌘⇧ and tapping P again walks the list; releasing ⌘ picks. */
   const cycling = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const mode = registry.mode(modeId)
   const page = pages.at(-1)
@@ -129,9 +132,11 @@ export function Palette({ registry }: { registry: Registry }) {
   function changeQuery(value: string) {
     setQuery(value)
     setSelected("")
+    setNotice(undefined)
   }
 
   function open(modeId: string) {
+    clearTimeout(closeTimer.current)
     cycling.current = false
     setModeId(modeId)
     setPages([])
@@ -140,6 +145,7 @@ export function Palette({ registry }: { registry: Registry }) {
   }
 
   function close() {
+    clearTimeout(closeTimer.current)
     cycling.current = false
     visible.current = false
     closePalette()
@@ -176,7 +182,10 @@ export function Palette({ registry }: { registry: Registry }) {
     } catch (error) {
       console.error("[palette]", error)
     }
+    if (result?.notice) setNotice(result.notice)
     if (result?.keepOpen) setReloads((n) => n + 1)
+    // Leave a notice up long enough to read before closing.
+    else if (result?.notice) closeTimer.current = setTimeout(close, 1000)
     else close()
   }
 
@@ -317,6 +326,12 @@ export function Palette({ registry }: { registry: Registry }) {
                 >
                   <ItemIcon icon={item.icon} />
                   <span className="max-w-[65%] shrink-0 truncate">{item.title}</span>
+                  {item.badge && (
+                    <span className="flex max-w-[30%] shrink-0 items-center gap-1 rounded-sm border px-1.5 text-[11px] text-muted-foreground">
+                      <Puzzle className="size-3" />
+                      <span className="truncate">{item.badge}</span>
+                    </span>
+                  )}
                   {item.subtitle && (
                     <span className="min-w-0 truncate text-xs text-muted-foreground">
                       {item.subtitle}
@@ -338,15 +353,22 @@ export function Palette({ registry }: { registry: Registry }) {
           ))}
         </CommandList>
         <footer className="flex items-center justify-between gap-4 border-t px-3 py-2 text-xs text-muted-foreground">
-          <div className="flex min-w-0 items-center gap-1">
-            <span>{mode.name}</span>
-            {pages.map((p, i) => (
-              <span key={i} className="flex min-w-0 items-center gap-1">
-                <ChevronRight className="size-3 shrink-0" />
-                <span className="truncate">{p.title}</span>
-              </span>
-            ))}
-          </div>
+          {notice ? (
+            <div className="flex min-w-0 items-center gap-1 text-foreground">
+              <Check className="size-3 shrink-0" />
+              <span className="truncate">{notice}</span>
+            </div>
+          ) : (
+            <div className="flex min-w-0 items-center gap-1">
+              <span>{mode.name}</span>
+              {pages.map((p, i) => (
+                <span key={i} className="flex min-w-0 items-center gap-1">
+                  <ChevronRight className="size-3 shrink-0" />
+                  <span className="truncate">{p.title}</span>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="flex shrink-0 items-center gap-3">
             {selectedItem?.actions?.map((action) => (
               <Hint key={action.id} label={action.title} shortcut={action.shortcut} />

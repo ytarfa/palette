@@ -19,8 +19,11 @@ export interface PaletteContext {
   copy(text: string): Promise<void>
 }
 
-/** Return `{ keepOpen: true }` to keep the palette open; items are then reloaded. */
-export type RunResult = void | { keepOpen?: boolean }
+/**
+ * Return `{ keepOpen: true }` to keep the palette open; items are then reloaded.
+ * `notice` is shown in the footer, and holds the palette open for a moment if it closes.
+ */
+export type RunResult = void | { keepOpen?: boolean; notice?: string }
 
 export interface Command {
   /** Unique within its source. */
@@ -34,6 +37,8 @@ export interface Command {
   group?: string
   /** Muted text on the right, e.g. "Pinned". */
   hint?: string
+  /** Outlined label after the title, e.g. the plugin a tabs-mode item comes from. */
+  badge?: string
   /**
    * Shortcut shown next to the item, e.g. "mod+shift+t". Display only.
    * Usually left unset: the registry fills it in from src/config/shortcuts.json.
