@@ -6,6 +6,7 @@ import { favicon, focusTab, shortUrl } from "./util"
 export default definePlugin({
   id: "tabs",
   name: "Tabs",
+  category: "core",
   sources: [
     {
       mode: TABS.id,

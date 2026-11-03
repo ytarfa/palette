@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -13,11 +14,15 @@ export const alias = { "@": path.resolve(import.meta.dirname, "./src") }
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias },
+  test: {
+    include: ["src/**/*.test.ts"],
+  },
   build: {
     emptyOutDir: false,
     rolldownOptions: {
       input: {
         palette: path.resolve(import.meta.dirname, "palette.html"),
+        options: path.resolve(import.meta.dirname, "options.html"),
         background: path.resolve(import.meta.dirname, "src/background/index.ts"),
       },
       output: {

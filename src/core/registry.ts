@@ -1,35 +1,42 @@
 import shortcuts from "@/config/shortcuts.json"
 import { isMac } from "./keys"
 import { COMMANDS, TABS } from "./modes"
+import { isEnabled, type Settings } from "./settings"
 import type { Command, Mode, PaletteContext, Plugin, Source } from "./types"
 
 export interface Registry {
+  plugins: Plugin[]
   modes: Mode[]
   mode(id: string): Mode
   /** If the query starts with a mode prefix (e.g. ">"), the mode and the rest of the query. */
   matchPrefix(query: string): { mode: Mode; rest: string } | undefined
-  sources(modeId: string): Source[]
+  /** Sources for a mode, from plugins turned on in `settings`. */
+  sources(modeId: string, settings: Settings): Source[]
 }
 
 export function createRegistry(plugins: Plugin[]): Registry {
   const modes: Mode[] = [TABS, COMMANDS, ...plugins.flatMap((p) => p.modes ?? [])]
-  const sources: Source[] = plugins.flatMap((plugin) => {
+  const sources = plugins.flatMap((plugin) => {
     const own = plugin.sources ?? []
     const commands = plugin.commands ?? []
     const all = commands.length
       ? [...own, { mode: COMMANDS.id, items: () => commands }]
       : own
-    return all.map((source) => namespaced(plugin, source))
+    return all.map((source) => ({ plugin, source: namespaced(plugin, source) }))
   })
 
   return {
+    plugins,
     modes,
     mode: (id) => modes.find((m) => m.id === id) ?? TABS,
     matchPrefix(query) {
       const mode = modes.find((m) => m.prefix && query.startsWith(m.prefix))
       return mode && { mode, rest: query.slice(mode.prefix!.length).trimStart() }
     },
-    sources: (modeId) => sources.filter((s) => s.mode === modeId),
+    sources: (modeId, settings) =>
+      sources
+        .filter(({ plugin, source }) => source.mode === modeId && isEnabled(plugin, settings))
+        .map(({ source }) => source),
   }
 }
 

@@ -35,6 +35,8 @@ async function zoomBy(ctx: PaletteContext, delta: number) {
 export default definePlugin({
   id: "tab-commands",
   name: "Tab commands",
+  description: "Duplicate, pin, mute, move and close tabs; copy links; zoom",
+  category: "general",
   commands: [
     {
       id: "new",

@@ -41,6 +41,8 @@ function fallbacks(ctx: PaletteContext): Command[] {
 export default definePlugin({
   id: "web-search",
   name: "Web search",
+  description: "Open what you type as an address, or search for it with your default search engine",
+  category: "general",
   sources: [
     { mode: TABS.id, dynamic: true, items: fallbacks },
     { mode: COMMANDS.id, dynamic: true, items: fallbacks },

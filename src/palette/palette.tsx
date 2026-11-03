@@ -14,6 +14,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { formatShortcut, formatShortcutText, isModKey, matchesShortcut } from "@/core/keys"
 import { COMMANDS, TABS } from "@/core/modes"
 import { collect, type Registry } from "@/core/registry"
+import { getSettings, type Settings } from "@/core/settings"
 import type { Command as Item, Icon, PaletteContext, RunResult } from "@/core/types"
 import { cn } from "@/lib/utils"
 import { closePalette, copyText, embedded, onHostMessage, post, takePendingMode } from "./host"
@@ -57,6 +58,7 @@ export function Palette({ registry }: { registry: Registry }) {
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState("")
   const [tab, setTab] = useState<chrome.tabs.Tab>()
+  const [settings, setSettings] = useState<Settings>()
   const [staticItems, setStaticItems] = useState<Item[]>([])
   const [dynamicItems, setDynamicItems] = useState<Item[]>([])
 
@@ -87,13 +89,17 @@ export function Palette({ registry }: { registry: Registry }) {
     if (!session) return
     const abort = new AbortController()
     void (async () => {
-      const [active] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const [[active], settings] = await Promise.all([
+        chrome.tabs.query({ active: true, currentWindow: true }),
+        getSettings(),
+      ])
       const ctx: PaletteContext = { tab: active, query: currentQuery(), copy: copyText }
       const next = page
         ? await page.items(ctx)
-        : await collect(registry.sources(modeId).filter((s) => !s.dynamic), ctx)
+        : await collect(registry.sources(modeId, settings).filter((s) => !s.dynamic), ctx)
       if (abort.signal.aborted) return
       setTab(active)
+      setSettings(settings)
       setStaticItems(next)
       setLoadedSession(session)
     })().catch((error) => console.error("[palette]", error))
@@ -102,14 +108,14 @@ export function Palette({ registry }: { registry: Registry }) {
 
   // Dynamic items: reloaded as the query changes.
   useEffect(() => {
-    if (!session || page) return
+    if (!session || page || !settings) return
     const abort = new AbortController()
-    const sources = registry.sources(modeId).filter((s) => s.dynamic)
+    const sources = registry.sources(modeId, settings).filter((s) => s.dynamic)
     void collect(sources, { tab, query, copy: copyText }).then((next) => {
       if (!abort.signal.aborted) setDynamicItems(next)
     })
     return () => abort.abort()
-  }, [session, modeId, page, query, tab, registry])
+  }, [session, modeId, page, query, tab, settings, registry])
 
   // Only reveal the embedded frame once fresh items are rendered.
   useEffect(() => {

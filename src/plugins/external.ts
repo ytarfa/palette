@@ -14,6 +14,7 @@ import { definePlugin, type Command, type PaletteContext, type RunResult } from 
 export const pluginRequests = definePlugin({
   id: "plugin-requests",
   name: "Plugin requests",
+  category: "core",
   sources: [
     {
       mode: "commands",
@@ -51,6 +52,7 @@ export const pluginRequests = definePlugin({
 export const externalPlugins = definePlugin({
   id: "external",
   name: "Plugins",
+  category: "core",
   commands: [
     {
       id: "manage",

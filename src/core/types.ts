@@ -88,6 +88,17 @@ export interface Source {
 export interface Plugin {
   id: string
   name: string
+  /** One line for the settings page. */
+  description?: string
+  /**
+   * Where the plugin is listed in settings: "site" (commands for one website),
+   * "general", or "core" (always on, not listed).
+   */
+  category?: "site" | "general" | "core"
+  /** Off until the user turns it on in settings. Defaults to true. */
+  enabledByDefault?: boolean
+  /** Home page, for the plugin's icon in settings. */
+  url?: string
   modes?: Mode[]
   /** Static commands, listed in the "commands" mode (⌘⇧K). */
   commands?: Command[]

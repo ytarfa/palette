@@ -8,6 +8,7 @@ import {
   PanelTopClose,
   Puzzle,
   Settings,
+  SlidersHorizontal,
 } from "lucide-react"
 import { definePlugin, type Command } from "@/core/types"
 
@@ -23,6 +24,8 @@ const page = (id: string, title: string, url: string, icon: Command["icon"]): Co
 export default definePlugin({
   id: "browser-commands",
   name: "Browser commands",
+  description: "New windows, and Chrome's history, downloads, bookmarks and settings pages",
+  category: "general",
   commands: [
     {
       id: "new-window",
@@ -53,5 +56,13 @@ export default definePlugin({
     page("extensions", "Open extensions", "chrome://extensions", Puzzle),
     page("settings", "Open settings", "chrome://settings", Settings),
     page("shortcuts", "Configure Palette shortcuts", "chrome://extensions/shortcuts", Keyboard),
+    {
+      id: "palette-settings",
+      title: "Palette settings",
+      group: "Browser",
+      icon: SlidersHorizontal,
+      keywords: ["options", "preferences", "plugins"],
+      run: () => chrome.runtime.openOptionsPage(),
+    },
   ],
 })
