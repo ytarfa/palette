@@ -84,7 +84,7 @@ export interface Plugin {
   id: string
   name: string
   modes?: Mode[]
-  /** Static commands, listed in the "commands" mode (⌘K). */
+  /** Static commands, listed in the "commands" mode (⌘⇧K). */
   commands?: Command[]
   /** Item providers for any mode. */
   sources?: Source[]

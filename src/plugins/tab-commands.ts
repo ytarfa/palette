@@ -31,7 +31,7 @@ async function zoomBy(ctx: PaletteContext, delta: number) {
   await chrome.tabs.setZoom(tabId(ctx), Math.min(5, Math.max(0.25, zoom + delta)))
 }
 
-/** ⌘K — everyday actions on the current tab. */
+/** ⌘⇧K — everyday actions on the current tab. */
 export default definePlugin({
   id: "tab-commands",
   name: "Tab commands",

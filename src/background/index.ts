@@ -38,7 +38,7 @@ chrome.runtime.onMessage.addListener((message: FallbackMessage) => {
 })
 
 // Tabs opened before install (or before an extension reload) don't have the
-// content script yet. Inject it so ⌘P / ⌘K work without reloading every tab.
+// content script yet. Inject it so they get the in-page palette instead of the popup.
 chrome.runtime.onInstalled.addListener(async () => {
   const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] })
   for (const tab of tabs) {

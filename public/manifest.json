@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Palette",
-  "description": "A command palette for Chrome. ⌘P to switch tabs, ⌘K to run commands.",
+  "description": "A command palette for Chrome. ⌘⇧P to switch tabs, ⌘⇧K to run commands.",
   "version": "0.1.0",
   "minimum_chrome_version": "127",
   "icons": {

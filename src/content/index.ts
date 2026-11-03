@@ -1,12 +1,11 @@
 /**
- * Content script. Catches ⌘P / ⌘K on the page and shows the palette in an
- * iframe, which isolates it from the page's CSS and scripts. The frame is
- * created on first use and then kept around, hidden, so reopening is instant.
+ * Content script. When the background worker relays a shortcut (⌘⇧P / ⌘⇧K,
+ * see "commands" in the manifest), shows the palette in an iframe, which
+ * isolates it from the page's CSS and scripts. The frame is created on first
+ * use and then kept around, hidden, so reopening is instant.
  *
  * Built as a standalone IIFE (see vite.content.config.ts).
  */
-import { COMMANDS, TABS } from "@/core/modes"
-import { matchesShortcut } from "@/core/keys"
 import type { FallbackMessage, FromFrame, ModeId, OpenMessage, ToFrame } from "@/shared/messages"
 
 declare global {
@@ -14,11 +13,6 @@ declare global {
     __palette?: { dispose(): void }
   }
 }
-
-const SHORTCUTS: [string, ModeId][] = [
-  [TABS.shortcut!, TABS.id],
-  [COMMANDS.shortcut!, COMMANDS.id],
-]
 
 // If the extension was reloaded, an older copy of this script may still be
 // running in the page. Replace it.
@@ -87,18 +81,6 @@ function hide() {
   previousFocus = null
 }
 
-function onKeyDown(e: KeyboardEvent) {
-  if (!alive()) return dispose()
-  for (const [shortcut, mode] of SHORTCUTS) {
-    if (matchesShortcut(e, shortcut)) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      open(mode)
-      return
-    }
-  }
-}
-
 function onFrameMessage(e: MessageEvent) {
   if (!frame || e.source !== frame.contentWindow) return
   const data = e.data as (FromFrame & { palette?: string }) | undefined
@@ -128,7 +110,6 @@ function onVisibilityChange() {
 }
 
 function dispose() {
-  window.removeEventListener("keydown", onKeyDown, true)
   window.removeEventListener("message", onFrameMessage)
   document.removeEventListener("visibilitychange", onVisibilityChange)
   if (alive()) chrome.runtime.onMessage.removeListener(onRuntimeMessage)
@@ -136,7 +117,6 @@ function dispose() {
   delete window.__palette
 }
 
-window.addEventListener("keydown", onKeyDown, true)
 window.addEventListener("message", onFrameMessage)
 document.addEventListener("visibilitychange", onVisibilityChange)
 chrome.runtime.onMessage.addListener(onRuntimeMessage)

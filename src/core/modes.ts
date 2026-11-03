@@ -1,11 +1,14 @@
 import type { Mode } from "./types"
 
-/** Built-in modes. Their global shortcuts live in the content script and manifest. */
+/**
+ * Built-in modes. Their global shortcuts are the "commands" in the manifest;
+ * `shortcut` here is what the palette itself listens for while focused.
+ */
 export const TABS: Mode = {
   id: "tabs",
   name: "Tabs",
   placeholder: "Search open tabs…",
-  shortcut: "mod+p",
+  shortcut: "mod+shift+p",
 }
 
 export const COMMANDS: Mode = {
@@ -13,5 +16,5 @@ export const COMMANDS: Mode = {
   name: "Commands",
   placeholder: "Run a command…",
   prefix: ">",
-  shortcut: "mod+k",
+  shortcut: "mod+shift+k",
 }

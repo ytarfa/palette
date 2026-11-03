@@ -19,7 +19,7 @@ const page = (id: string, title: string, url: string, icon: Command["icon"]): Co
   run: () => void chrome.tabs.create({ url }),
 })
 
-/** ⌘K — windows and browser pages. */
+/** ⌘⇧K — windows and browser pages. */
 export default definePlugin({
   id: "browser-commands",
   name: "Browser commands",

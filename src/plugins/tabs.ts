@@ -2,7 +2,7 @@ import { TABS } from "@/core/modes"
 import { definePlugin } from "@/core/types"
 import { favicon, focusTab, shortUrl } from "./util"
 
-/** ⌘P — fuzzy search open tabs across windows, most recently used first. */
+/** ⌘⇧P — fuzzy search open tabs across windows, most recently used first. */
 export default definePlugin({
   id: "tabs",
   name: "Tabs",

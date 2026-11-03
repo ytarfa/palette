@@ -47,7 +47,7 @@ export function Palette({ registry }: { registry: Registry }) {
   const [dynamicItems, setDynamicItems] = useState<Item[]>([])
 
   const visible = useRef(!embedded)
-  /** Holding ⌘ and tapping P again walks the list; releasing ⌘ picks. */
+  /** Holding ⌘⇧ and tapping P again walks the list; releasing ⌘ picks. */
   const cycling = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -118,12 +118,13 @@ export function Palette({ registry }: { registry: Registry }) {
   }
 
   function switchMode(id: string) {
+    cycling.current = false
     setModeId(id)
     setPages([])
     setQuery("")
   }
 
-  /** ⌘P / ⌘K while open: same mode cycles (tabs) or toggles closed; other mode switches. */
+  /** ⌘⇧P / ⌘⇧K while open: same mode cycles (tabs) or toggles closed; other mode switches. */
   function onModeShortcut(id: string) {
     if (id !== modeId || page) return switchMode(id)
     if (id !== TABS.id) return close()
