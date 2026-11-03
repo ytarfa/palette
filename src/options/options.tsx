@@ -1,10 +1,11 @@
 import { Puzzle } from "lucide-react"
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Switch } from "@/components/ui/switch"
 import { describeAccess, getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
 import { formatShortcut } from "@/core/keys"
+import { builtInNames, pluginName } from "@/core/plugin-names"
 import { getSettings, isEnabled, onSettingsChanged, setPluginEnabled, type Settings } from "@/core/settings"
 import type { Plugin } from "@/core/types"
 import { favicon } from "@/plugins/util"
@@ -13,6 +14,8 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
   const [settings, setSettings] = useState<Settings>()
   const [external, setExternal] = useState<StoredPlugin[]>([])
   const [shortcuts, setShortcuts] = useState<chrome.commands.Command[]>([])
+  // Same renaming as in the palette, so a plugin can't pass for a built-in one here either.
+  const reserved = useMemo(() => builtInNames(plugins), [plugins])
 
   useEffect(() => {
     void getSettings().then(setSettings)
@@ -114,7 +117,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
           <Row
             key={plugin.id}
             icon={<Puzzle className="size-4 text-muted-foreground" />}
-            title={plugin.name}
+            title={pluginName(plugin.name, reserved)}
             description={[plugin.description, describeAccess(plugin.access)].filter(Boolean).join(" · ")}
             detail={`Extension ID ${plugin.id}`}
           >
@@ -137,7 +140,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
                 <Switch
                   checked
                   onCheckedChange={() => void setStatus(plugin.id, "denied")}
-                  aria-label={`Turn off ${plugin.name}`}
+                  aria-label={`Turn off ${pluginName(plugin.name, reserved)}`}
                 />
               ) : (
                 <Button size="sm" onClick={() => void setStatus(plugin.id, "allowed")}>

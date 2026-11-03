@@ -30,7 +30,7 @@ export interface ItemData {
   icon?: string
   /** Extra words to match on when searching. */
   keywords?: string[]
-  /** Group heading. Defaults to the plugin's name. */
+  /** Shown after the plugin's name in the group heading. Built-in names like "Tabs" are ignored. */
   group?: string
   /** Muted text on the right. */
   hint?: string
@@ -90,7 +90,7 @@ export interface TabInfo {
 
 /** What Palette should do after a command runs. Plugins can't touch the clipboard from a service worker, so Palette does it. */
 export interface Effect {
-  /** Copy this text to the clipboard. */
+  /** Copy this text to the clipboard, up to 100,000 characters. */
   copy?: string
   /** Open an http(s) URL, in the current tab unless `newTab`. */
   open?: string

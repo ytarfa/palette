@@ -1,6 +1,6 @@
 import type { Plugin } from "@/core/types"
 import browserCommands from "./browser-commands"
-import { externalPlugins, pluginRequests } from "./external"
+import { externalPlugins, pluginRequests, reserveBuiltInNames } from "./external"
 import pageTools from "./page-tools"
 import tabCommands from "./tab-commands"
 import tabs from "./tabs"
@@ -27,3 +27,6 @@ export const plugins: Plugin[] = [
   externalPlugins,
   webSearch,
 ]
+
+// Plugins from other extensions can't use these plugins' names or group headings.
+reserveBuiltInNames(plugins)
