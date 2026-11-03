@@ -13,16 +13,17 @@ const sites = Object.values(
 
 /**
  * All plugins. Order sets the order of groups when the query is empty:
- * approval requests first, then commands for the current site.
+ * commands for the current site first. The notice about plugin requests sits
+ * with "Manage plugins…", out of the top slot.
  * Users turn plugins on and off in settings (src/options).
  */
 export const plugins: Plugin[] = [
-  pluginRequests,
   ...sites,
   tabs,
   tabCommands,
   browserCommands,
   pageTools,
+  pluginRequests,
   externalPlugins,
   webSearch,
 ]

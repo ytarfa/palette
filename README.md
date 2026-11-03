@@ -232,10 +232,10 @@ definePalettePlugin({
 ```
 
 1. When the plugin is installed, it registers its commands with Palette. Palette's toolbar icon shows a badge.
-2. **Allow “Toolbox” to add commands** appears at the top of ⌘⇧K, with what the plugin will see: the current tab's site or full address, and what you type, only if it declared them in `access`. <kbd>↵</kbd> allows it, <kbd>⌘</kbd><kbd>⌫</kbd> blocks it.
+2. ⌘⇧K shows **1 plugin is waiting for approval**, which opens Palette's settings. There, next to the plugin's name, description and extension ID, it says what the plugin will see: the current tab's site or full address, and what you type, only if it declared them in `access`. **Allow** turns it on and **Block** turns it down. Plugins can only be allowed from settings, never from the palette.
 3. Its commands show up in the list. Picking one asks the plugin to run it, and the plugin can reply with something for Palette to do, like copying text or opening a page.
 
-The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, and only shows icons embedded in the plugin itself. If an approved plugin later renames itself or asks for more (a new mode, a source that sees every keystroke, or more of the current tab or what you type), it goes back to waiting for approval. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them on or off, or remove them.
+The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, strips control, bidi and zero-width characters from its text, and only shows icons embedded in the plugin itself. If an approved plugin later renames itself or asks for more (a new mode, a source that sees every keystroke, or more of the current tab or what you type), it goes back to waiting for approval. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them off or remove them; turning one back on happens in settings.
 
 See the [SDK's README](packages/sdk) for the full API, and [`examples/toolbox`](examples/toolbox) for a complete plugin to load next to Palette.
 

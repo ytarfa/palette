@@ -75,7 +75,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 })
 
 // Plugins from other extensions register here (see packages/sdk). They stay
-// "pending" until the user approves them in the palette.
+// "pending" until the user approves them in settings.
 chrome.runtime.onMessageExternal.addListener((message: ToPalette, sender, sendResponse) => {
   const pluginId = sender.id
   if (!pluginId || message?.palette !== PROTOCOL) return
