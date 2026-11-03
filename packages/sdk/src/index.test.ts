@@ -23,7 +23,7 @@ const request = (fields: Record<string, unknown>) => ({ palette: PROTOCOL, query
 
 describe("parseRequest", () => {
   it("accepts the documented requests", () => {
-    const tab = { id: 1, windowId: 2, url: "https://example.com/", title: "Example" }
+    const tab = { origin: "https://example.com", id: 1, windowId: 2, url: "https://example.com/", title: "Example" }
     expect(parseRequest(request({ type: "items", source: "s", tab }))).toEqual(
       request({ type: "items", source: "s", tab }),
     )
@@ -70,6 +70,7 @@ describe("parseRequest", () => {
       request({ type: "run", id: "a", tab: { id: 1.5 } }),
       request({ type: "run", id: "a", tab: { windowId: Number.NaN } }),
       request({ type: "run", id: "a", tab: { url: 1 } }),
+      request({ type: "run", id: "a", tab: { origin: 1 } }),
       request({ type: "run", id: "a", tab: { title: {} } }),
     ]
     for (const message of malformed) expect(parseRequest(message), JSON.stringify(message)).toBeUndefined()

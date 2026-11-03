@@ -32,10 +32,10 @@ const isTitle = (value: unknown): value is string => isText(value, MAX_TITLE)
 function parseTab(value: unknown): TabInfo | undefined | false {
   if (value === undefined) return undefined
   if (!isObject(value)) return false
-  const { id, windowId, url, title } = value
+  const { origin, id, windowId, url, title } = value
   if (!optional(id, isInteger) || !optional(windowId, isInteger)) return false
-  if (!optional(url, isUrl) || !optional(title, isTitle)) return false
-  return { id, windowId, url, title }
+  if (!optional(origin, isUrl) || !optional(url, isUrl) || !optional(title, isTitle)) return false
+  return { origin, id, windowId, url, title }
 }
 
 /**
