@@ -101,11 +101,23 @@ definePalettePlugin({
 
 Ask for as little as you can: addresses can carry tokens and other private data.
 
+## Who can send requests
+
+Your plugin only answers messages from Palette's extension ID (`PALETTE_ID`, or the `paletteId` you pass). It drops requests that aren't well formed: an unknown `type`, ids that aren't short strings, a `query` over 10,000 characters, or a `tab` with fields of the wrong type. `items`, `children` and `run` only ever see the documented fields.
+
+Palette isn't on the Chrome Web Store yet, so its ID comes from the public `key` in its manifest. Any extension loaded unpacked with the same key gets the same ID, and can then do anything Palette can: read your registration, ask for your items and children, run your commands with any `query` and `tab`, and read what they return. Until that changes:
+
+- **Don't return secrets.** Assume titles, subtitles, children, effects and error messages can be read by another extension.
+- **Don't trust `query` or `tab`.** `tab.url` might not be a page the user has open. Check values before using them, especially in URLs or API calls.
+- **Be careful with commands that change things**, like writing to an API with the user's credentials. Another extension could run them without the user picking them.
+
+Once Palette is published, `PALETTE_ID` will switch to its Chrome Web Store ID, which no other extension can claim. Pass `paletteId` to keep talking to an unpacked build.
+
 ## Good to know
 
 - **Approval.** Nothing shows until the user allows your plugin in Palette's settings, which list its name, description and declared `access` next to its extension ID. They can turn it off or remove it later from settings or **Manage plugins…**. Approved plugins receive only what they declared in `access`.
 - **Text.** Palette removes control, bidi and zero-width characters from every string your plugin sends, then trims it.
 - **Registration.** Plugins register when installed or updated, and when the browser starts. If your commands change at runtime, call `register()` on the object `definePalettePlugin` returns.
 - **Re-approval.** The user approves your plugin's name, what its sources can see (the modes they use, and whether any is `dynamic`) and its `access`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, with your first `dynamic` source, or with more `access` puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
-- **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build.
+- **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build. Another extension can claim the ID for now, see [Who can send requests](#who-can-send-requests).
 - **Protocol.** Messages are plain JSON with a `palette` version field, defined in [`src/protocol.ts`](src/protocol.ts), if you'd rather not use this package.

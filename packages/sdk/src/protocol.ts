@@ -11,7 +11,8 @@ export const PROTOCOL = 1
 
 /**
  * Palette's extension ID when loaded unpacked (pinned by the manifest `key`).
- * TODO: switch to the Chrome Web Store ID once published.
+ * The key is public, so another unpacked extension can claim this ID too.
+ * TODO: switch to the Chrome Web Store ID once published. No one else can claim it.
  */
 export const PALETTE_ID = "jcjopjoglbklaejmahmfnhmanfoomnpk"
 

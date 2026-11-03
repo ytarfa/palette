@@ -303,7 +303,7 @@ docs/                  README banners and screenshots
 
 After a rebuild, click the reload button on the extension's card in `chrome://extensions`. Open tabs pick up the new content script automatically.
 
-The manifest pins Palette's extension ID to `jcjopjoglbklaejmahmfnhmanfoomnpk` when loaded unpacked, so plugins can find it. The Chrome Web Store will assign a different one, which `PALETTE_ID` in the SDK will then need to use.
+The manifest pins Palette's extension ID to `jcjopjoglbklaejmahmfnhmanfoomnpk` when loaded unpacked, so plugins can find it. The `key` behind it is public, so any unpacked extension that copies it gets the same ID and can send requests to plugins as if it were Palette ([what plugins should do about it](packages/sdk/README.md#who-can-send-requests)). The Chrome Web Store will assign an ID no other extension can claim, and `PALETTE_ID` in the SDK will then switch to it.
 
 To regenerate the icons after editing `public/icons/icon.svg`:
 
