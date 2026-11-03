@@ -1,0 +1,19 @@
+{
+  "tab-commands:new": "mod+t",
+  "tab-commands:close": "mod+w",
+  "tab-commands:reopen": "mod+shift+t",
+  "tab-commands:reload": "mod+r",
+  "tab-commands:hard-reload": "mod+shift+r",
+  "tab-commands:back": { "mac": "mod+[", "other": "alt+arrowleft" },
+  "tab-commands:forward": { "mac": "mod+]", "other": "alt+arrowright" },
+  "tab-commands:zoom-in": "mod+plus",
+  "tab-commands:zoom-out": "mod+minus",
+  "tab-commands:zoom-reset": "mod+0",
+  "browser-commands:new-window": "mod+n",
+  "browser-commands:new-incognito": "mod+shift+n",
+  "browser-commands:close-window": "mod+shift+w",
+  "browser-commands:history": { "mac": "mod+y", "other": "mod+h" },
+  "browser-commands:downloads": { "mac": "mod+shift+j", "other": "mod+j" },
+  "browser-commands:bookmarks": { "mac": "mod+alt+b", "other": "mod+shift+o" },
+  "browser-commands:settings": { "mac": "mod+comma" }
+}

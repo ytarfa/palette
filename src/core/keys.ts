@@ -1,7 +1,5 @@
 export const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent)
 
-const MODIFIERS = ["mod", "ctrl", "meta", "alt", "shift"] as const
-
 interface Parsed {
   ctrl: boolean
   meta: boolean
@@ -10,9 +8,13 @@ interface Parsed {
   key: string
 }
 
+// Keys that can't be written literally inside "a+b".
+const CHARS: Record<string, string> = { plus: "+", minus: "-", comma: "," }
+
 function parse(shortcut: string): Parsed {
   const parts = shortcut.toLowerCase().split("+")
-  const key = parts.pop() ?? ""
+  const name = parts.pop() ?? ""
+  const key = CHARS[name] ?? name
   const has = (m: string) => parts.includes(m)
   return {
     ctrl: has("ctrl") || (!isMac && has("mod")),
@@ -46,18 +48,31 @@ const SYMBOLS: Record<string, string> = isMac
   ? { mod: "⌘", meta: "⌘", ctrl: "⌃", alt: "⌥", shift: "⇧" }
   : { mod: "Ctrl", meta: "Win", ctrl: "Ctrl", alt: "Alt", shift: "Shift" }
 
+// Platform conventions: ⌃⌥⇧⌘ on macOS, Ctrl+Alt+Shift elsewhere.
+const MODIFIER_ORDER = isMac
+  ? ["ctrl", "alt", "shift", "mod", "meta"]
+  : ["mod", "ctrl", "alt", "shift", "meta"]
+
+// Named keys shown as symbols.
 const KEYS: Record<string, string> = {
   backspace: "⌫",
   enter: "↵",
   escape: "Esc",
   arrowup: "↑",
   arrowdown: "↓",
+  arrowleft: "←",
+  arrowright: "→",
 }
 
 /** "mod+backspace" → ["⌘", "⌫"] on macOS, ["Ctrl", "⌫"] elsewhere. */
 export function formatShortcut(shortcut: string): string[] {
   const parts = shortcut.toLowerCase().split("+")
   const key = parts.pop() ?? ""
-  const mods = MODIFIERS.filter((m) => parts.includes(m)).map((m) => SYMBOLS[m])
-  return [...mods, KEYS[key] ?? key.toUpperCase()]
+  const mods = MODIFIER_ORDER.filter((m) => parts.includes(m)).map((m) => SYMBOLS[m])
+  return [...mods, KEYS[key] ?? CHARS[key] ?? key.toUpperCase()]
+}
+
+/** As one string, the way menus show it: "⇧⌘T" on macOS, "Ctrl+Shift+T" elsewhere. */
+export function formatShortcutText(shortcut: string): string {
+  return formatShortcut(shortcut).join(isMac ? "" : "+")
 }

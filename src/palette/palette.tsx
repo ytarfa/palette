@@ -11,7 +11,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { formatShortcut, isModKey, matchesShortcut } from "@/core/keys"
+import { formatShortcut, formatShortcutText, isModKey, matchesShortcut } from "@/core/keys"
 import { COMMANDS, TABS } from "@/core/modes"
 import { collect, type Registry } from "@/core/registry"
 import type { Command as Item, Icon, PaletteContext, RunResult } from "@/core/types"
@@ -300,6 +300,7 @@ export function Palette({ registry }: { registry: Registry }) {
                   {item.hint && (
                     <CommandShortcut className="tracking-normal">{item.hint}</CommandShortcut>
                   )}
+                  {item.shortcut && <CommandShortcut>{formatShortcutText(item.shortcut)}</CommandShortcut>}
                   {item.children && (
                     <ChevronRight
                       data-slot="command-shortcut"

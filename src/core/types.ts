@@ -34,6 +34,11 @@ export interface Command {
   group?: string
   /** Muted text on the right, e.g. "Pinned". */
   hint?: string
+  /**
+   * Shortcut shown next to the item, e.g. "mod+shift+t". Display only.
+   * Usually left unset: the registry fills it in from src/config/shortcuts.json.
+   */
+  shortcut?: string
   /** Show regardless of the query, e.g. "Search the web for …" fallbacks. */
   alwaysShow?: boolean
   /** Hide the command unless this returns true. */

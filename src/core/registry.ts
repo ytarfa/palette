@@ -1,3 +1,5 @@
+import shortcuts from "@/config/shortcuts.json"
+import { isMac } from "./keys"
 import { COMMANDS, TABS } from "./modes"
 import type { Command, Mode, PaletteContext, Plugin, Source } from "./types"
 
@@ -31,7 +33,19 @@ export function createRegistry(plugins: Plugin[]): Registry {
   }
 }
 
-/** Prefix ids with the plugin id so plugins can't collide, and apply `when`. */
+/**
+ * Shortcuts by command id ("plugin:command"), from src/config/shortcuts.json.
+ * Values are either one shortcut, or `{ mac, other }` when platforms differ.
+ */
+type ShortcutConfig = Record<string, string | { mac?: string; other?: string }>
+
+function configuredShortcut(id: string): string | undefined {
+  const entry = (shortcuts as ShortcutConfig)[id]
+  if (typeof entry === "string") return entry
+  return isMac ? entry?.mac : entry?.other
+}
+
+/** Prefix ids with the plugin id so plugins can't collide, apply `when`, fill in shortcuts. */
 function namespaced(plugin: Plugin, source: Source): Source {
   return {
     ...source,
@@ -39,7 +53,10 @@ function namespaced(plugin: Plugin, source: Source): Source {
       const items = await source.items(ctx)
       return items
         .filter((item) => !item.when || item.when(ctx))
-        .map((item) => ({ ...item, id: `${plugin.id}:${item.id}` }))
+        .map((item) => {
+          const id = `${plugin.id}:${item.id}`
+          return { ...item, id, shortcut: item.shortcut ?? configuredShortcut(id) }
+        })
     },
   }
 }

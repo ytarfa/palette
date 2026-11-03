@@ -116,3 +116,16 @@ export default definePlugin({
 ```
 
 See `src/core/types.ts` for the full API.
+
+### Shortcuts shown next to commands
+
+Chrome doesn't expose its keyboard shortcuts to extensions, so the ones shown in the list (⌘T, ⇧⌘T, …) come from [`src/config/shortcuts.json`](src/config/shortcuts.json). It maps command ids (`plugin:command`) to Chrome's default shortcuts, taken from [Google's list](https://support.google.com/chrome/answer/157179). The registry fills them in, so plugins don't need to set anything:
+
+```json
+{
+  "tab-commands:new": "mod+t",
+  "tab-commands:back": { "mac": "mod+[", "other": "alt+arrowleft" }
+}
+```
+
+`mod` is ⌘ on macOS and Ctrl elsewhere. Use `plus`, `minus` and `comma` for those keys. A command can also set `shortcut` itself, which overrides the config. Shortcuts here are only displayed: Chrome itself still handles the keypress.
