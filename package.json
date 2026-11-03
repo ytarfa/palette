@@ -2,6 +2,7 @@
   "name": "palette",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "pnpm build:sdk && rm -rf dist && (vite build --watch --mode development & vite build -c vite.content.config.ts --watch --mode development & wait)",

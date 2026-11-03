@@ -289,3 +289,7 @@ To regenerate the icons after editing `public/icons/icon.svg`:
 ```sh
 cd public/icons && for s in 16 32 48 128; do rsvg-convert -w $s -h $s icon.svg -o $s.png; done
 ```
+
+## License
+
+[MIT](LICENSE)
