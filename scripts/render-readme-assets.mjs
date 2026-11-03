@@ -20,6 +20,8 @@ const jobs = [
   ["screenshot-tabs.html?dark", "screenshot-tabs-dark.png", 1280, 800],
   ["screenshot-commands.html?mode=commands", "screenshot-commands.png", 1280, 800],
   ["screenshot-commands.html?mode=commands&dark", "screenshot-commands-dark.png", 1280, 800],
+  ["screenshot-github.html?mode=commands&site=github", "screenshot-github.png", 1280, 800],
+  ["screenshot-github.html?mode=commands&site=github&dark", "screenshot-github-dark.png", 1280, 800],
 ]
 
 // Stand-in favicons for the demo tabs: a coloured tile with the site's initial.

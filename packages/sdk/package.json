@@ -1,0 +1,20 @@
+{
+  "name": "@palette/sdk",
+  "version": "0.1.0",
+  "description": "Add commands to the Palette Chrome extension from your own extension.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.7",
+    "typescript": "~7.0.2"
+  }
+}

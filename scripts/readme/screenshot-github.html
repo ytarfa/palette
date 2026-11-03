@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="readme.css" />
+    <style>
+      body {
+        width: 1280px;
+        height: 800px;
+      }
+      /* Cut off by the bottom edge. */
+      .window {
+        width: 1040px;
+        height: 600px;
+        margin: 44px auto 0;
+        border-radius: 14px 14px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="caption">
+      <h1>Commands for the site you’re on.</h1>
+      <p>On GitHub: jump around the repo, copy links, check out pull requests.</p>
+    </header>
+    <div class="window">
+      <div class="toolbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url">github.com/acme/storefront/pull/482</div>
+        <div class="ext"><img src="/icons/128.png" alt="" /></div>
+      </div>
+      <div class="viewport">
+        <div class="page">
+          <small>acme / storefront</small>
+          <h2>Fix checkout race condition <span style="color:#86868b;font-weight:400">#482</span></h2>
+          <p>Two concurrent requests to <code>/checkout</code> could both reserve the last item in stock. This wraps the reservation in a transaction and retries on conflict.</p>
+          <p>Adds a regression test that fires 20 parallel checkouts against a single unit of stock.</p>
+        </div>
+        <iframe></iframe>
+      </div>
+    </div>
+    <script src="readme.js"></script>
+  </body>
+</html>

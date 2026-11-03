@@ -4,14 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "rm -rf dist && (vite build --watch --mode development & vite build -c vite.content.config.ts --watch --mode development & wait)",
-    "build": "tsc -b && rm -rf dist && vite build && vite build -c vite.content.config.ts",
-    "typecheck": "tsc -b",
+    "dev": "pnpm build:sdk && rm -rf dist && (vite build --watch --mode development & vite build -c vite.content.config.ts --watch --mode development & wait)",
+    "build": "pnpm build:sdk && tsc -b && rm -rf dist && vite build && vite build -c vite.content.config.ts",
+    "typecheck": "pnpm build:sdk && tsc -b",
     "lint": "oxlint",
-    "render:readme": "node scripts/render-readme-assets.mjs"
+    "render:readme": "node scripts/render-readme-assets.mjs",
+    "build:sdk": "pnpm --filter @palette/sdk build"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
+    "@palette/sdk": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.5.2",

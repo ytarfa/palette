@@ -7,6 +7,7 @@
   <a href="#install">Install</a> ·
   <a href="#features">Features</a> ·
   <a href="#keyboard">Keyboard</a> ·
+  <a href="#site-commands">Site commands</a> ·
   <a href="#plugins">Plugins</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#development">Development</a>
@@ -31,12 +32,13 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 
 - **Tab switcher.** Fuzzy search every open tab across all your windows, most recently used first. Hold ⌘⇧ and tap P to walk down the list, then let go to switch, just like in VS Code.
 - **Commands.** About 30 actions for tabs, pages and windows: duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, copy the URL as a Markdown link, zoom, and more. Chrome's own shortcuts are shown next to them, so you learn them as you go.
+- **Site commands.** On GitHub, jump to a repo's issues, pull requests or actions, copy a pull request as a Markdown link, or copy its `gh pr checkout` command.
 - **Open or search anything.** Type a domain to open it, or any text to search with your default search engine.
 - **Isolated from the page.** The palette runs in its own frame, so site styles can't break it and it can't break the site.
 - **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
 - **Light and dark**, following your system.
-- **Extensible.** Everything in the list comes from a [plugin](#plugins). Adding a command is a few lines of TypeScript.
-- **Private.** Everything happens on your device. No network requests, no analytics, no data collected.
+- **Extensible.** Everything in the list comes from a [plugin](#plugins). Other extensions can add their own commands too, once you approve them.
+- **Private.** Everything happens on your device. No network requests, no analytics, no data collected. Plugins you approve see the current tab's title and address when the palette asks them for commands.
 
 ## Install
 
@@ -66,6 +68,27 @@ Requires Chrome 127 or later.
 | <kbd>Esc</kbd> | Go back a level, or close |
 
 On Windows and Linux, use Ctrl instead of ⌘. You can change both shortcuts at `chrome://extensions/shortcuts`.
+
+## Site commands
+
+When you're on a site Palette knows, its commands show up at the top of ⌘⇧K. For now that's GitHub:
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-github-dark.png" />
+    <img src="docs/screenshot-github.png" width="80%" alt="GitHub commands on a pull request page" />
+  </picture>
+</p>
+
+| Where | Commands |
+| --- | --- |
+| Anywhere on GitHub | Your pull requests, your issues, notifications, dashboard, new repository |
+| A repository | Code, issues, pull requests, actions, releases, branches, settings, new issue, new pull request, open in github.dev, copy clone URL (HTTPS or SSH) |
+| A pull request | Files changed, commits, checks, copy as Markdown link, copy `gh pr checkout` command |
+| An issue | Copy as Markdown link |
+| While typing | Search the repository's code, or all of GitHub |
+
+<kbd>⌘</kbd><kbd>↵</kbd> opens a page in a new tab instead. Everything comes from the tab's address and title, so it needs no extra permissions and never reads the page. Each site is a plugin in [`src/plugins/sites`](src/plugins/sites), so adding Linear, Jira or Notion works the same way.
 
 ## Plugins
 
@@ -141,6 +164,31 @@ export default definePlugin({
 
 The full API is in [`src/core/types.ts`](src/core/types.ts).
 
+### Plugins from other extensions
+
+Chrome extensions can't download code, so a published Palette can't load plugins the way an editor does. Instead, a plugin is its own extension that talks to Palette through Chrome's extension messaging. The [`@palette/sdk`](packages/sdk) package handles that:
+
+```ts
+// The plugin extension's service worker
+import { definePalettePlugin } from "@palette/sdk"
+
+definePalettePlugin({
+  name: "Toolbox",
+  description: "UUIDs, timestamps and encoders",
+  commands: [
+    { id: "uuid", title: "Copy new UUID", run: () => ({ copy: crypto.randomUUID() }) },
+  ],
+})
+```
+
+1. When the plugin is installed, it registers its commands with Palette. Palette's toolbar icon shows a badge.
+2. **Allow “Toolbox” to add commands** appears at the top of ⌘⇧K. <kbd>↵</kbd> allows it, <kbd>⌘</kbd><kbd>⌫</kbd> blocks it.
+3. Its commands show up in the list. Picking one asks the plugin to run it, and the plugin can reply with something for Palette to do, like copying text or opening a page.
+
+The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, and only shows icons embedded in the plugin itself. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them on or off, or remove them.
+
+See the [SDK's README](packages/sdk) for the full API, and [`examples/toolbox`](examples/toolbox) for a complete plugin to load next to Palette.
+
 ### Shortcuts next to commands
 
 Chrome doesn't let extensions read its keyboard shortcuts, so the ones in the list come from [`src/config/shortcuts.json`](src/config/shortcuts.json). It maps command ids to Chrome's default shortcuts, taken from [Google's list](https://support.google.com/chrome/answer/157179), and plugins don't need to set anything:
@@ -161,7 +209,7 @@ When you press ⌘⇧P or ⌘⇧K:
 1. Chrome passes the shortcut to the background worker. It's an extension shortcut, so it works on every page and takes priority over the page's own shortcuts.
 2. The worker asks the tab's content script to open the palette. If the tab can't run one (`chrome://` pages, the new tab page, the Web Store), it opens the palette as the toolbar popup instead.
 3. The content script shows the palette in an iframe, inside a closed shadow root. The page's CSS, fonts and key handlers can't reach it. The frame is created the first time and then kept hidden, so it opens instantly after that.
-4. The palette is an extension page, so plugins call the `chrome.*` APIs directly, with no messaging layer in between.
+4. The palette is an extension page, so built-in plugins call the `chrome.*` APIs directly. Plugins from other extensions are asked for their items over `chrome.runtime` messaging.
 
 Tabs that were open before the extension was installed get the content script injected on install, so there's no need to reload them.
 
@@ -178,6 +226,8 @@ src/core/              Plugin API, registry, modes and keyboard helpers
 src/plugins/           Everything the palette lists
 src/config/            Chrome's default shortcuts, shown next to commands
 src/components/ui/     shadcn/ui components
+packages/sdk/          @palette/sdk, for plugins in other extensions
+examples/toolbox/      Example plugin extension
 scripts/               README image rendering
 docs/                  README banners and screenshots
 ```
@@ -185,11 +235,14 @@ docs/                  README banners and screenshots
 | Script | |
 | --- | --- |
 | `pnpm dev` | Rebuilds `dist/` on every change |
-| `pnpm build` | Typechecks, then builds `dist/` |
+| `pnpm build` | Builds the SDK, typechecks, then builds `dist/` |
+| `pnpm --filter palette-toolbox build` | Builds the example plugin into `examples/toolbox/dist/` |
 | `pnpm lint` | Lints with oxlint |
 | `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome, using the real palette from `dist/` and a set of demo tabs |
 
 After a rebuild, click the reload button on the extension's card in `chrome://extensions`. Open tabs pick up the new content script automatically.
+
+The manifest pins Palette's extension ID to `jcjopjoglbklaejmahmfnhmanfoomnpk` when loaded unpacked, so plugins can find it. The Chrome Web Store will assign a different one, which `PALETTE_ID` in the SDK will then need to use.
 
 To regenerate the icons after editing `public/icons/icon.svg`:
 

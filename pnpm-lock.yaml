@@ -11,6 +11,9 @@ importers:
       '@fontsource-variable/geist':
         specifier: ^5.3.0
         version: 5.3.0
+      '@palette/sdk':
+        specifier: workspace:*
+        version: link:packages/sdk
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -72,6 +75,31 @@ importers:
       vite:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@24.19.2)(jiti@2.7.0)
+
+  examples/toolbox:
+    dependencies:
+      '@palette/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+    devDependencies:
+      '@types/chrome':
+        specifier: ^0.3.7
+        version: 0.3.7
+      typescript:
+        specifier: ~7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.5
+        version: 8.3.5(@types/node@24.19.2)(jiti@2.7.0)
+
+  packages/sdk:
+    devDependencies:
+      '@types/chrome':
+        specifier: ^0.3.7
+        version: 0.3.7
+      typescript:
+        specifier: ~7.0.2
+        version: 7.0.2
 
 packages:
 
