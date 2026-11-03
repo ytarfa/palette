@@ -17,6 +17,13 @@ export interface PaletteContext {
   query: string
   /** Copy text to the clipboard. Works in both the in-page and popup palette. */
   copy(text: string): Promise<void>
+  /**
+   * Make the palette invisible without closing it, so it keeps focus (e.g. for
+   * the clipboard) and stays out of a screenshot. Resolves once the page has
+   * repainted. The palette closes as usual when the command finishes.
+   * Does nothing in the popup, which isn't part of the page.
+   */
+  conceal?(): Promise<void>
 }
 
 /**
@@ -46,6 +53,11 @@ export interface Command {
   shortcut?: string
   /** Show regardless of the query, e.g. "Search the web for …" fallbacks. */
   alwaysShow?: boolean
+  /**
+   * For a plugin's static `commands`: off until the user turns it on in
+   * settings. Defaults to true. Ignored for items from `sources`.
+   */
+  enabledByDefault?: boolean
   /** Hide the command unless this returns true. */
   when?(ctx: PaletteContext): boolean
   run?(ctx: PaletteContext): Awaitable<RunResult>
@@ -105,7 +117,10 @@ export interface Plugin {
   /** Home page, for the plugin's icon in settings. */
   url?: string
   modes?: Mode[]
-  /** Static commands, listed in the "commands" mode (⌘⇧K). */
+  /**
+   * Static commands, listed in the "commands" mode (⌘⇧K). Each one can be
+   * turned on or off on its own in settings.
+   */
   commands?: Command[]
   /** Item providers for any mode. */
   sources?: Source[]

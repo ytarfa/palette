@@ -1,4 +1,4 @@
-import { Puzzle } from "lucide-react"
+import { ChevronRight, Puzzle } from "lucide-react"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
@@ -6,7 +6,15 @@ import { Switch } from "@/components/ui/switch"
 import { describeAccess, getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
 import { formatShortcut } from "@/core/keys"
 import { builtInNames, pluginName } from "@/core/plugin-names"
-import { getSettings, isEnabled, onSettingsChanged, setPluginEnabled, type Settings } from "@/core/settings"
+import {
+  getSettings,
+  isCommandEnabled,
+  isEnabled,
+  onSettingsChanged,
+  setCommandEnabled,
+  setPluginEnabled,
+  type Settings,
+} from "@/core/settings"
 import type { Plugin } from "@/core/types"
 import { favicon } from "@/plugins/util"
 
@@ -100,9 +108,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
 
       <Section title="General">
         {general.map((plugin) => (
-          <Row key={plugin.id} title={plugin.name} description={plugin.description}>
-            {toggle(plugin)}
-          </Row>
+          <GeneralPlugin key={plugin.id} plugin={plugin} settings={settings} toggle={toggle(plugin)} />
         ))}
       </Section>
 
@@ -152,6 +158,56 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
         ))}
       </Section>
     </main>
+  )
+}
+
+/** A plugin row. Plugins with static commands expand to switch each command on or off. */
+function GeneralPlugin({ plugin, settings, toggle }: { plugin: Plugin; settings: Settings; toggle: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const commands = plugin.commands ?? []
+  const on = isEnabled(plugin, settings)
+
+  return (
+    <div>
+      <Row title={plugin.name} description={plugin.description}>
+        {commands.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            aria-expanded={open}
+            onClick={() => setOpen(!open)}
+          >
+            {commands.length} commands
+            <ChevronRight className={`transition-transform ${open ? "rotate-90" : ""}`} />
+          </Button>
+        )}
+        {toggle}
+      </Row>
+      {open && (
+        <div className={`mb-3 divide-y rounded-lg border bg-muted/30 px-3 ${on ? "" : "opacity-50"}`}>
+          {commands.map((command) => {
+            const id = `${plugin.id}:${command.id}`
+            const Icon = typeof command.icon === "string" ? undefined : command.icon
+            return (
+              <Row
+                key={id}
+                icon={Icon && <Icon className="size-4 text-muted-foreground" />}
+                title={command.title}
+                description={command.subtitle}
+              >
+                <Switch
+                  checked={isCommandEnabled(id, command, settings)}
+                  disabled={!on}
+                  onCheckedChange={(enabled) => void setCommandEnabled(id, enabled)}
+                  aria-label={command.title}
+                />
+              </Row>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -70,7 +70,10 @@
     "search",
     "storage",
     "scripting",
-    "clipboardWrite"
+    "clipboardWrite",
+    "activeTab",
+    "browsingData",
+    "cookies"
   ],
   "host_permissions": [
     "http://*/*",

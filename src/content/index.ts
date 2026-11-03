@@ -49,7 +49,9 @@ function createFrame() {
   host.style.cssText = "all: initial; position: fixed; inset: 0; z-index: 2147483647; display: none;"
   const shadow = host.attachShadow({ mode: "closed" })
   frame = document.createElement("iframe")
-  frame.allow = "clipboard-write"
+  // Name the origin: a bare "clipboard-write" means the src's origin when the
+  // policy is set, and src is only set once the token is registered below.
+  frame.allow = `clipboard-write ${frameOrigin}`
   // A color-scheme mismatch with the page would make the frame opaque.
   frame.style.cssText =
     "all: initial; width: 100%; height: 100%; border: 0; color-scheme: normal; background: transparent;"
@@ -84,6 +86,7 @@ function show() {
   if (!host || !frame) return
   visible = true
   host.style.display = "block"
+  unconceal()
   frame.focus()
   post({ type: "focus" })
 }
@@ -92,8 +95,26 @@ function hide() {
   if (!host || !visible) return
   visible = false
   host.style.display = "none"
+  unconceal()
   if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true })
   previousFocus = null
+}
+
+/**
+ * Make the palette invisible while keeping the frame focused (display: none
+ * would blur it, and the clipboard needs focus). Replies once the page has
+ * repainted, so a screenshot taken then won't include the palette.
+ */
+function conceal() {
+  if (!host) return
+  host.style.opacity = "0"
+  host.style.pointerEvents = "none"
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => post({ type: "concealed" }), 50)))
+}
+
+function unconceal() {
+  host?.style.removeProperty("opacity")
+  host?.style.removeProperty("pointer-events")
 }
 
 function onFrameMessage(e: MessageEvent) {
@@ -111,6 +132,9 @@ function onFrameMessage(e: MessageEvent) {
       break
     case "close":
       hide()
+      break
+    case "conceal":
+      conceal()
       break
   }
 }

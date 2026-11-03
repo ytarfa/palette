@@ -34,6 +34,10 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 - **Commands.** About 30 actions for tabs, pages and windows: duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, copy the URL as a Markdown link, zoom, and more. Chrome's own shortcuts are shown next to them, so you learn them as you go.
 - **Site commands.** Commands for the site you're on, for 19 sites: GitHub, Jira, Google Docs, YouTube and more. Turn each one on or off in settings.
 - **Page tools.** On any page: copy the URL without tracking parameters, go up a level, open it in the Wayback Machine, search the site.
+- **Screenshots.** Copy the visible area or the whole page to the clipboard, or save it as PNG or JPG.
+- **Copy and read.** Copy the selection as a Markdown quote that links back to the exact text, or the whole article as Markdown. Reader view, dark mode on any page, print or save as PDF.
+- **Tab cleanup.** Close tabs you haven't used in a day, a week or a month, with a preview first.
+- **Site data** (off by default). Clear cookies and storage for the current site, or copy its cookies as a header, JSON or cookies.txt.
 - **Open or search anything.** Type a domain to open it, or any text to search with your default search engine.
 - **Isolated from the page.** The palette runs in its own frame, so site styles can't break it and it can't break the site.
 - **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
@@ -175,7 +179,7 @@ export default definePlugin({
 })
 ```
 
-Then add it to the list in [`src/plugins/index.ts`](src/plugins/index.ts).
+Then add it to the list in [`src/plugins/index.ts`](src/plugins/index.ts). The plugin gets a switch in settings, and so does each of its `commands`. Set `enabledByDefault: false` on a plugin or a command to leave it off until the user turns it on.
 
 <details>
 <summary>A new mode: search bookmarks with <code>@</code></summary>
