@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Switch } from "@/components/ui/switch"
-import { getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
+import { describeAccess, getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
 import { formatShortcut } from "@/core/keys"
 import { getSettings, isEnabled, onSettingsChanged, setPluginEnabled, type Settings } from "@/core/settings"
 import type { Plugin } from "@/core/types"
@@ -105,7 +105,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
 
       <Section
         title="From other extensions"
-        description="Extensions built with @palette/sdk can add their own commands. They see the current tab's title and address when the palette asks them for commands."
+        description="Extensions built with @palette/sdk can add their own commands. Each one sees only what's listed under it."
       >
         {external.length === 0 && (
           <p className="py-3 text-sm text-muted-foreground">No plugins installed.</p>
@@ -115,7 +115,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
             key={plugin.id}
             icon={<Puzzle className="size-4 text-muted-foreground" />}
             title={plugin.name}
-            description={plugin.status === "pending" ? "Waiting for your approval" : plugin.description}
+            description={[plugin.status === "pending" ? "Waiting for your approval" : plugin.description, describeAccess(plugin.access)].filter(Boolean).join(" · ")}
           >
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => void removePlugin(plugin.id)}>

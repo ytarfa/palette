@@ -1,11 +1,13 @@
 import { Blocks, Puzzle, ShieldCheck } from "lucide-react"
-import type { Effect, ItemData, ItemsResponse, RunResponse, TabInfo } from "@palette/sdk"
+import type { Effect, ItemData, ItemsResponse, RunResponse } from "@palette/sdk"
 import {
   cleanItems,
+  describeAccess,
   getPlugins,
   removePlugin,
   request,
   setStatus,
+  shared,
   type StoredPlugin,
 } from "@/core/external"
 import { definePlugin, type Command, type PaletteContext, type RunResult } from "@/core/types"
@@ -23,7 +25,7 @@ export const pluginRequests = definePlugin({
         return pending.map((plugin) => ({
           id: plugin.id,
           title: `Allow “${plugin.name}” to add commands`,
-          subtitle: "It will see the current tab's title and address",
+          subtitle: describeAccess(plugin.access),
           group: "Plugin requests",
           icon: ShieldCheck,
           keywords: [plugin.name, plugin.description ?? "", "plugin"],
@@ -105,14 +107,16 @@ async function load(mode: string, dynamic: boolean, ctx: PaletteContext): Promis
         mode === "commands" && !dynamic
           ? [Promise.resolve(plugin.commands.map((item) => toCommand(plugin, item, {})))]
           : []
+      // Without query access, a dynamic source is asked once like a static one:
+      // it would only get empty queries, and asking on every keystroke would
+      // still tell it when and how much the user types.
       const fetched = plugin.sources
-        .filter((s) => s.mode === mode && !!s.dynamic === dynamic)
+        .filter((s) => s.mode === mode && (!!s.dynamic && plugin.access?.query === true) === dynamic)
         .map(async (source) => {
           const reply = await request<ItemsResponse>(plugin.id, {
             type: "items",
             source: source.id,
-            query: ctx.query,
-            tab: tabInfo(ctx),
+            ...shared(plugin.access, ctx),
           })
           return cleanItems(reply?.items, plugin.id).map((item) =>
             toCommand(plugin, item, { source: source.id }),
@@ -150,8 +154,7 @@ function toCommand(
             const reply = await request<ItemsResponse>(plugin.id, {
               type: "children",
               id: item.id,
-              query: ctx.query,
-              tab: tabInfo(ctx),
+              ...shared(plugin.access, ctx),
             })
             return cleanItems(reply?.items, plugin.id).map((child) =>
               toCommand(plugin, child, { parent: item.id }),
@@ -162,16 +165,13 @@ function toCommand(
     async run(ctx) {
       const reply = await request<RunResponse>(
         plugin.id,
-        { type: "run", id: item.id, ...origin, query: ctx.query, tab: tabInfo(ctx) },
+        { type: "run", id: item.id, ...origin, ...shared(plugin.access, ctx) },
         10_000,
       )
       return applyEffect(ctx, reply?.effect)
     },
   }
 }
-
-const tabInfo = ({ tab }: PaletteContext): TabInfo | undefined =>
-  tab && { id: tab.id, windowId: tab.windowId, url: tab.url, title: tab.title }
 
 async function applyEffect(ctx: PaletteContext, effect: Effect | undefined): Promise<RunResult> {
   if (!effect || typeof effect !== "object") return

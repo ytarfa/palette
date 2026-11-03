@@ -9,11 +9,14 @@ import {
   PROTOCOL,
   type ItemData,
   type ModeId,
+  type PluginAccess,
   type PluginStatus,
   type Registration,
   type SourceData,
+  type TabInfo,
   type ToPlugin,
 } from "@palette/sdk"
+import type { PaletteContext } from "./types"
 
 export interface StoredPlugin extends Registration {
   /** The plugin's extension ID. */
@@ -28,10 +31,15 @@ export interface StoredPlugin extends Registration {
 export interface Capabilities {
   /** Modes its sources list items in. */
   modes: ModeId[]
-  /** Whether any source is asked on every keystroke, so it sees what the user types. */
+  /** Whether any source is asked on every keystroke. */
   dynamic: boolean
-  // Declared data access (tab URL, query) would go here too, compared in `exceeds`.
+  /** How much of the current tab it sees. Missing on approvals recorded before access existed. */
+  tab?: TabAccess
+  /** Whether it sees what the user types. */
+  query?: boolean
 }
+
+type TabAccess = NonNullable<PluginAccess["tab"]>
 
 export interface Approval extends Capabilities {
   name: string
@@ -40,11 +48,16 @@ export interface Approval extends Capabilities {
 export const capabilities = (registration: Registration): Capabilities => ({
   modes: [...new Set(registration.sources.map((s) => s.mode))].sort(),
   dynamic: registration.sources.some((s) => s.dynamic),
+  tab: registration.access?.tab ?? "none",
+  query: registration.access?.query === true,
 })
 
 /** Whether `next` can do something `approved` couldn't. */
 export const exceeds = (next: Capabilities, approved: Capabilities) =>
-  next.modes.some((mode) => !approved.modes.includes(mode)) || (next.dynamic && !approved.dynamic)
+  next.modes.some((mode) => !approved.modes.includes(mode)) ||
+  (next.dynamic && !approved.dynamic) ||
+  TAB_ACCESS.indexOf(next.tab ?? "none") > TAB_ACCESS.indexOf(approved.tab ?? "none") ||
+  (next.query === true && approved.query !== true)
 
 const approval = (registration: Registration): Approval => ({ name: registration.name, ...capabilities(registration) })
 
@@ -62,6 +75,8 @@ export function nextStatus(stored: StoredPlugin | undefined, registration: Regis
 /** Each plugin has its own key, so one plugin can't make the others' writes fail. */
 const PREFIX = "externalPlugin:"
 const MODES = ["tabs", "commands"]
+/** From least to most. */
+const TAB_ACCESS = ["none", "origin", "url"]
 
 /** Limits on what a plugin may store, before it's approved or not. */
 export const MAX_ICON = 16_000
@@ -162,6 +177,43 @@ export async function request<T>(pluginId: string, message: DistributiveOmit<ToP
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never
 
+// Access
+
+/** The query and tab to send a plugin, limited to what it declared. Anything else gets nothing. */
+export function shared(access: PluginAccess | undefined, { tab, query }: Pick<PaletteContext, "tab" | "query">) {
+  return { query: access?.query === true ? query : "", tab: tabInfo(tab, access) }
+}
+
+export function tabInfo(tab: chrome.tabs.Tab | undefined, access: PluginAccess | undefined): TabInfo | undefined {
+  if (!tab) return undefined
+  const origin = originOf(tab.url)
+  if (access?.tab === "url") return { origin, id: tab.id, windowId: tab.windowId, url: tab.url, title: tab.title }
+  if (access?.tab === "origin") return origin ? { origin } : undefined
+  return undefined
+}
+
+/** `https://example.com` for web pages. Pages without one (`chrome://`, `file://`, `data:`) give nothing. */
+function originOf(url: string | undefined) {
+  try {
+    const origin = new URL(url ?? "").origin
+    return origin === "null" ? undefined : origin
+  } catch {
+    return undefined
+  }
+}
+
+const TAB_TEXT: Record<string, string> = {
+  origin: "the current tab's site",
+  url: "the current tab's address and title",
+}
+
+/** What a plugin sees, in words, for the approval prompt and the settings page. */
+export function describeAccess(access: PluginAccess | undefined) {
+  const seen = [TAB_TEXT[access?.tab ?? "none"], access?.query ? "what you type in the palette" : undefined]
+  const parts = seen.filter((part) => part !== undefined)
+  return parts.length ? `Sees ${parts.join(", and ")}` : "Doesn't see your tabs or what you type"
+}
+
 // Validation
 
 const text = (value: unknown, max: number) =>
@@ -243,10 +295,15 @@ export function cleanRegistration(raw: unknown, pluginId: string): Registration 
         }))
         .filter((s) => s.id && MODES.includes(s.mode))
     : []
+  const access = (plugin.access && typeof plugin.access === "object" ? plugin.access : {}) as Record<string, unknown>
   return {
     name,
     description: text(plugin.description, 200),
     commands: cleanItems(plugin.commands, pluginId),
     sources,
+    access: {
+      tab: TAB_ACCESS.includes(access.tab as string) ? (access.tab as PluginAccess["tab"]) : "none",
+      query: access.query === true,
+    },
   }
 }

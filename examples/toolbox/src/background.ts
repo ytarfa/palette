@@ -23,6 +23,8 @@ const tryDecode = (text: string) => {
 definePalettePlugin({
   name: "Toolbox",
   description: "UUIDs, timestamps and encoders",
+  // "Copy tab as…" needs the tab's address and title, the encoders need what's typed.
+  access: { tab: "url", query: true },
   commands: [
     {
       id: "uuid",

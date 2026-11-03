@@ -46,8 +46,26 @@ export interface ItemData {
 export interface SourceData {
   id: string
   mode: ModeId
-  /** Ask again on every keystroke. Otherwise asked once when the palette opens. */
+  /**
+   * Ask again on every keystroke. Otherwise asked once when the palette opens.
+   * Needs `access.query`: without it, Palette treats the source as static.
+   */
   dynamic?: boolean
+}
+
+/**
+ * What Palette sends with each request. Ask only for what you need: the user
+ * sees this when approving the plugin. By default, plugins see neither.
+ */
+export interface PluginAccess {
+  /**
+   * The tab the palette was opened from. "origin" sends only the site, e.g.
+   * `https://example.com`. "url" adds the full address, title and tab IDs.
+   * Defaults to "none".
+   */
+  tab?: "none" | "origin" | "url"
+  /** What the user types in the palette. Without it, `query` is always empty. */
+  query?: boolean
 }
 
 export interface Registration {
@@ -56,10 +74,14 @@ export interface Registration {
   /** Static commands, listed under ⌘⇧K. */
   commands: ItemData[]
   sources: SourceData[]
+  access?: PluginAccess
 }
 
-/** The tab the palette was opened from. */
+/** The tab the palette was opened from, as much as `access.tab` allows. */
 export interface TabInfo {
+  /** The site, e.g. `https://example.com`. Sent with "origin" and "url" access. */
+  origin?: string
+  /** The rest is sent with "url" access only. */
   id?: number
   windowId?: number
   url?: string
@@ -91,7 +113,9 @@ export type RegisterResponse = { ok: true; status: PluginStatus } | { ok: false;
 
 interface Request {
   palette: typeof PROTOCOL
+  /** Empty unless the plugin declared `access.query`. */
   query: string
+  /** Missing unless the plugin declared `access.tab`. */
   tab?: TabInfo
 }
 

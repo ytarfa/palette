@@ -42,7 +42,7 @@ A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 | `run(ctx)` | Runs in your service worker. Can return an effect, see below |
 | `children` | `{ placeholder, items(ctx) }`: open a nested list instead of running |
 
-`ctx` is `{ query, tab }`: what's typed, and the `id`, `windowId`, `url` and `title` of the tab the palette was opened from.
+`ctx` is `{ query, tab }`: what's typed, and the tab the palette was opened from. Both are empty unless you ask for them, see [Access](#access).
 
 ### Effects
 
@@ -78,12 +78,33 @@ definePalettePlugin({
 })
 ```
 
-Sources without `dynamic` are asked once each time the palette opens. Palette waits up to 1.5 seconds for an answer and skips plugins that are slower.
+Sources without `dynamic` are asked once each time the palette opens. Dynamic sources need `access.query`, otherwise they're asked once too. Palette waits up to 1.5 seconds for an answer and skips plugins that are slower.
+
+## Access
+
+By default your plugin sees neither the current tab nor what's typed. Declare what you need, and the user sees it when approving your plugin:
+
+```ts
+definePalettePlugin({
+  name: "Toolbox",
+  access: { tab: "url", query: true },
+  // ...
+})
+```
+
+| `access` | `ctx` gets |
+| --- | --- |
+| `tab: "none"` (default) | No `tab` |
+| `tab: "origin"` | `tab.origin` only, e.g. `https://example.com`. Nothing on pages without one, like `chrome://` pages |
+| `tab: "url"` | `tab.origin`, `url`, `title`, `id` and `windowId` |
+| `query: true` | `query`, what's typed, in every mode your sources list in. Otherwise it's always `""` |
+
+Ask for as little as you can: addresses can carry tokens and other private data.
 
 ## Good to know
 
-- **Approval.** Nothing shows until the user allows your plugin. They can block or remove it later from **Manage plugins…**. Approved plugins receive the current tab's URL and title with each request.
+- **Approval.** Nothing shows until the user allows your plugin. They can block or remove it later from **Manage plugins…**. Approved plugins receive only what they declared in `access`.
 - **Registration.** Plugins register when installed or updated, and when the browser starts. If your commands change at runtime, call `register()` on the object `definePalettePlugin` returns.
-- **Re-approval.** The user approves your plugin's name and what its sources can see: the modes they use, and whether any is `dynamic`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, or with your first `dynamic` source puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
+- **Re-approval.** The user approves your plugin's name, what its sources can see (the modes they use, and whether any is `dynamic`) and its `access`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, with your first `dynamic` source, or with more `access` puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
 - **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build.
 - **Protocol.** Messages are plain JSON with a `palette` version field, defined in [`src/protocol.ts`](src/protocol.ts), if you'd rather not use this package.
