@@ -1,0 +1,47 @@
+name: Promote
+
+# Turns a tested pre-release (made by release.yml) into the latest release, so
+# the README's releases/latest/download/palette.zip points at it. Run it by
+# hand from the Actions tab with the tag to promote.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to promote, like v1.2.3"
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check it's a pre-release
+        run: |
+          if ! prerelease=$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease); then
+            echo "::error::There's no release for $TAG. Push the tag first and wait for the Release workflow."
+            exit 1
+          fi
+          if [ "$prerelease" != "true" ]; then
+            echo "::error::$TAG is already promoted."
+            exit 1
+          fi
+
+      # TODO: publish to the Chrome Web Store here, once Palette is listed. It goes
+      # before the GitHub promotion, so a failed upload leaves nothing half-done.
+      # Download the tested zip with `gh release download "$TAG" -p palette.zip`
+      # and upload it with the Chrome Web Store API (or chrome-webstore-upload-cli),
+      # using a client ID, client secret and refresh token stored as repo secrets.
+
+      - name: Make it the latest release
+        run: gh release edit "$TAG" --prerelease=false --latest
