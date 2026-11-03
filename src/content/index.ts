@@ -49,7 +49,9 @@ function createFrame() {
   host.style.cssText = "all: initial; position: fixed; inset: 0; z-index: 2147483647; display: none;"
   const shadow = host.attachShadow({ mode: "closed" })
   frame = document.createElement("iframe")
-  frame.allow = "clipboard-write"
+  // Name the origin: a bare "clipboard-write" means the src's origin when the
+  // policy is set, and src is only set once the token is registered below.
+  frame.allow = `clipboard-write ${frameOrigin}`
   // A color-scheme mismatch with the page would make the frame opaque.
   frame.style.cssText =
     "all: initial; width: 100%; height: 100%; border: 0; color-scheme: normal; background: transparent;"
