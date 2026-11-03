@@ -28,10 +28,24 @@ interface Page {
 // Start reading the popup's mode before React mounts (StrictMode runs effects twice).
 const pendingMode = embedded ? undefined : takePendingMode()
 
-// Item values are ids, so score the title (first keyword) plus the other keywords.
 // Scoring the title on its own lets "dupl" prefer "Duplicate tab" over "Close duplicate tabs".
-const filter = (_value: string, search: string, [title = "", ...rest]: string[] = []) =>
-  defaultFilter(title, search, rest)
+const score = (item: Item, search: string) =>
+  defaultFilter(item.title, search, [item.subtitle ?? "", ...(item.keywords ?? [])])
+
+/**
+ * Filter and sort here rather than in cmdk: cmdk sorts by moving DOM nodes,
+ * which goes wrong when items arrive asynchronously (dynamic and plugin items).
+ * `alwaysShow` items stay, after the matches.
+ */
+function search(items: Item[], query: string): Item[] {
+  const q = query.trim()
+  if (!q) return items
+  return items
+    .map((item) => ({ item, score: item.alwaysShow ? 0 : score(item, q) }))
+    .filter(({ item, score }) => item.alwaysShow || score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ item }) => item)
+}
 
 export function Palette({ registry }: { registry: Registry }) {
   /** Bumps every time the palette opens; resets cmdk and reloads items. */
@@ -60,8 +74,11 @@ export function Palette({ registry }: { registry: Registry }) {
     () => (page ? staticItems : [...staticItems, ...dynamicItems]),
     [page, staticItems, dynamicItems],
   )
-  const groups = useMemo(() => groupBy(items), [items])
-  const selectedItem = items.find((item) => item.id === selected)
+  const results = useMemo(() => search(items, query), [items, query])
+  // Groups come out ordered by their best match, since `results` is sorted.
+  const groups = useMemo(() => groupBy(results), [results])
+  // Typing, changing mode or opening a sub-list resets `selected`; fall back to the top item.
+  const selectedItem = results.find((item) => item.id === selected) ?? results[0]
 
   const currentQuery = useEffectEvent(() => query)
 
@@ -102,12 +119,17 @@ export function Palette({ registry }: { registry: Registry }) {
     }
   }, [session, loadedSession])
 
+  /** New query, new results: highlight the top one again. */
+  function changeQuery(value: string) {
+    setQuery(value)
+    setSelected("")
+  }
+
   function open(modeId: string) {
     cycling.current = false
     setModeId(modeId)
     setPages([])
-    setQuery("")
-    setSelected("")
+    changeQuery("")
     setSession((s) => s + 1)
   }
 
@@ -121,7 +143,7 @@ export function Palette({ registry }: { registry: Registry }) {
     cycling.current = false
     setModeId(id)
     setPages([])
-    setQuery("")
+    changeQuery("")
   }
 
   /** ⌘⇧P / ⌘⇧K while open: same mode cycles (tabs) or toggles closed; other mode switches. */
@@ -157,7 +179,7 @@ export function Palette({ registry }: { registry: Registry }) {
     if (item.children) {
       const { placeholder, items } = item.children
       setPages((pages) => [...pages, { title: item.title, placeholder, items }])
-      setQuery("")
+      changeQuery("")
     } else if (item.run) {
       void perform(item.run)
     }
@@ -165,16 +187,16 @@ export function Palette({ registry }: { registry: Registry }) {
 
   function back() {
     setPages((pages) => pages.slice(0, -1))
-    setQuery("")
+    changeQuery("")
   }
 
   function onQueryChange(value: string) {
     const match = page ? undefined : registry.matchPrefix(value)
     if (match && match.mode.id !== modeId) {
       setModeId(match.mode.id)
-      setQuery(match.rest)
+      changeQuery(match.rest)
     } else {
-      setQuery(value)
+      changeQuery(value)
     }
   }
 
@@ -245,8 +267,8 @@ export function Palette({ registry }: { registry: Registry }) {
       }}
     >
       <Command
-        filter={filter}
-        value={selected}
+        shouldFilter={false}
+        value={selectedItem?.id ?? ""}
         onValueChange={setSelected}
         onKeyDown={onKeyDown}
         vimBindings={false}
@@ -279,14 +301,11 @@ export function Palette({ registry }: { registry: Registry }) {
             <CommandGroup
               key={group}
               heading={group || undefined}
-              forceMount={list.some((item) => item.alwaysShow) || undefined}
             >
               {list.map((item) => (
                 <CommandItem
                   key={item.id}
                   value={item.id}
-                  keywords={[item.title, item.subtitle ?? "", ...(item.keywords ?? [])]}
-                  forceMount={item.alwaysShow}
                   onSelect={() => activate(item)}
                   className="gap-2.5 py-2"
                 >
