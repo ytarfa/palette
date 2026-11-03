@@ -43,7 +43,20 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 
 ## Install
 
-**From source** (until it's on the Chrome Web Store):
+Until it's on the Chrome Web Store:
+
+1. **[Download the latest release](https://github.com/ytarfa/palette/releases/latest/download/palette.zip)** and unzip it
+2. Open `chrome://extensions` and turn on **Developer mode**
+3. Click **Load unpacked** and pick the unzipped folder
+
+To update, download the new release, unzip it over the same folder, and click the reload button on Palette's card in `chrome://extensions`. All releases are listed on the [releases page](https://github.com/ytarfa/palette/releases).
+
+Requires Chrome 127 or later.
+
+<details>
+<summary>Or build it from source</summary>
+
+<br />
 
 ```sh
 git clone https://github.com/ytarfa/palette.git
@@ -52,9 +65,9 @@ pnpm install
 pnpm build
 ```
 
-Then open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the `dist` folder.
+Then load the `dist` folder the same way.
 
-Requires Chrome 127 or later.
+</details>
 
 ## Keyboard
 
@@ -279,6 +292,14 @@ docs/                  README banners and screenshots
 | `pnpm test` | Runs the tests (Vitest) |
 | `pnpm lint` | Lints with oxlint |
 | `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome, using the real palette from `dist/` and a set of demo tabs |
+
+### Continuous integration and releases
+
+- **Pull requests** run lint, typecheck, tests and both builds ([`ci.yml`](.github/workflows/ci.yml)). A pull request can't be merged into `main` until they pass.
+- **Every push to `main`** that changes the extension runs the same checks, then publishes a release with the built extension as `palette.zip` ([`release.yml`](.github/workflows/release.yml)). Pushes that only touch docs don't release. A release can also be started by hand from the Actions tab.
+- **Versions** are `major.minor.patch`: major and minor come from `public/manifest.json`, so bump those there for a bigger release. The patch number counts up on each release, and the release's `manifest.json` gets the full version.
+
+### Working on it
 
 After a rebuild, click the reload button on the extension's card in `chrome://extensions`. Open tabs pick up the new content script automatically.
 

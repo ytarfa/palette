@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.14.0",
   "scripts": {
     "dev": "pnpm build:sdk && rm -rf dist && (vite build --watch --mode development & vite build -c vite.content.config.ts --watch --mode development & wait)",
     "build": "pnpm build:sdk && tsc -b && rm -rf dist && vite build && vite build -c vite.content.config.ts",

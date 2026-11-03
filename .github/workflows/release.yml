@@ -1,0 +1,74 @@
+name: Release
+
+# Every push to main that changes the extension becomes a release, with the
+# built extension attached as palette.zip. The README links to
+# releases/latest/download/palette.zip.
+#
+# Version: major.minor from public/manifest.json (bump those by hand), patch
+# counted up from the previous release's tag.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "scripts/readme/**"
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # tags, for the next version number
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pick the version
+        id: version
+        run: |
+          base=$(jq -r .version public/manifest.json | cut -d. -f1,2)
+          last=$(git tag --list "v$base.*" --sort=-v:refname | head -n1)
+          if [ -z "$last" ]; then patch=0; else patch=$(( ${last##*.} + 1 )); fi
+          echo "version=$base.$patch" >> "$GITHUB_OUTPUT"
+          echo "Releasing $base.$patch (previous: ${last:-none})"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          jq --arg v "$VERSION" '.version = $v' dist/manifest.json > manifest.tmp && mv manifest.tmp dist/manifest.json
+          (cd dist && zip -qr ../palette.zip .)
+          cp palette.zip "palette-$VERSION.zip"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" palette.zip "palette-$VERSION.zip" \
+            --target "$GITHUB_SHA" \
+            --title "Palette $VERSION" \
+            --generate-notes
