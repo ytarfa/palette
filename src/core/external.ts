@@ -8,6 +8,7 @@
 import {
   PROTOCOL,
   type ItemData,
+  type ModeId,
   type PluginStatus,
   type Registration,
   type SourceData,
@@ -19,6 +20,43 @@ export interface StoredPlugin extends Registration {
   id: string
   status: PluginStatus
   updatedAt: number
+  /** What the user saw when they allowed it. Missing on plugins stored before this was recorded. */
+  approved?: Approval
+}
+
+/** What a plugin can see. Growing any of it needs the user's approval again. */
+export interface Capabilities {
+  /** Modes its sources list items in. */
+  modes: ModeId[]
+  /** Whether any source is asked on every keystroke, so it sees what the user types. */
+  dynamic: boolean
+  // Declared data access (tab URL, query) would go here too, compared in `exceeds`.
+}
+
+export interface Approval extends Capabilities {
+  name: string
+}
+
+export const capabilities = (registration: Registration): Capabilities => ({
+  modes: [...new Set(registration.sources.map((s) => s.mode))].sort(),
+  dynamic: registration.sources.some((s) => s.dynamic),
+})
+
+/** Whether `next` can do something `approved` couldn't. */
+export const exceeds = (next: Capabilities, approved: Capabilities) =>
+  next.modes.some((mode) => !approved.modes.includes(mode)) || (next.dynamic && !approved.dynamic)
+
+const approval = (registration: Registration): Approval => ({ name: registration.name, ...capabilities(registration) })
+
+/**
+ * The status after a plugin registers again. Allowed plugins go back to
+ * pending if they rename themselves or ask for more than the user approved.
+ */
+export function nextStatus(stored: StoredPlugin | undefined, registration: Registration): PluginStatus {
+  if (stored?.status !== "allowed") return stored?.status ?? "pending"
+  const approved = stored.approved ?? approval(stored)
+  const changed = registration.name !== approved.name || exceeds(capabilities(registration), approved)
+  return changed ? "pending" : "allowed"
 }
 
 /** Each plugin has its own key, so one plugin can't make the others' writes fail. */
@@ -77,19 +115,28 @@ async function update(fn: (plugins: Record<string, StoredPlugin>) => void) {
   await updateBadge()
 }
 
-/** Store a registration. New plugins wait for approval; re-registering keeps the decision. */
+/**
+ * Store a registration. New plugins wait for approval; re-registering keeps
+ * the decision, unless the plugin asks for more than it was allowed (see `nextStatus`).
+ */
 export async function savePlugin(id: string, registration: Registration): Promise<PluginStatus> {
   let status: PluginStatus = "pending"
   await update((plugins) => {
-    status = plugins[id]?.status ?? "pending"
-    plugins[id] = { ...registration, id, status, updatedAt: Date.now() }
+    const stored = plugins[id]
+    status = nextStatus(stored, registration)
+    const approved = status === "allowed" ? (stored.approved ?? approval(stored)) : undefined
+    plugins[id] = { ...registration, id, status, updatedAt: Date.now(), approved }
   })
   return status
 }
 
+/** Allowing a plugin records what the user approved, so registering with more asks again. */
 export const setStatus = (id: string, status: PluginStatus) =>
   update((plugins) => {
-    if (plugins[id]) plugins[id].status = status
+    const plugin = plugins[id]
+    if (!plugin) return
+    plugin.status = status
+    plugin.approved = status === "allowed" ? approval(plugin) : undefined
   })
 
 export const removePlugin = (id: string) =>

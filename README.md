@@ -235,7 +235,7 @@ definePalettePlugin({
 2. **Allow “Toolbox” to add commands** appears at the top of ⌘⇧K. <kbd>↵</kbd> allows it, <kbd>⌘</kbd><kbd>⌫</kbd> blocks it.
 3. Its commands show up in the list. Picking one asks the plugin to run it, and the plugin can reply with something for Palette to do, like copying text or opening a page.
 
-The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, and only shows icons embedded in the plugin itself. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them on or off, or remove them.
+The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, and only shows icons embedded in the plugin itself. If an approved plugin later renames itself or asks for more (a new mode, or a source that sees every keystroke), it goes back to waiting for approval. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them on or off, or remove them.
 
 See the [SDK's README](packages/sdk) for the full API, and [`examples/toolbox`](examples/toolbox) for a complete plugin to load next to Palette.
 

@@ -84,5 +84,6 @@ Sources without `dynamic` are asked once each time the palette opens. Palette wa
 
 - **Approval.** Nothing shows until the user allows your plugin. They can block or remove it later from **Manage plugins…**. Approved plugins receive the current tab's URL and title with each request.
 - **Registration.** Plugins register when installed or updated, and when the browser starts. If your commands change at runtime, call `register()` on the object `definePalettePlugin` returns.
+- **Re-approval.** The user approves your plugin's name and what its sources can see: the modes they use, and whether any is `dynamic`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, or with your first `dynamic` source puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
 - **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build.
 - **Protocol.** Messages are plain JSON with a `palette` version field, defined in [`src/protocol.ts`](src/protocol.ts), if you'd rather not use this package.

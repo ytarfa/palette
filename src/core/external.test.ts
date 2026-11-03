@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { Registration } from "@palette/sdk"
+import type { StoredPlugin } from "./external"
 
 type Listener = (changes: Record<string, unknown>, area: string) => void
 
@@ -91,7 +93,7 @@ describe("storage", () => {
 
     await setStatus("two", "allowed")
     expect(Object.keys(local.set.mock.calls[1][0])).toEqual(["externalPlugin:two"])
-    expect(await savePlugin("two", registration({ name: "Acme 2" }))).toBe("allowed")
+    expect(await savePlugin("two", registration({ description: "Updated" }))).toBe("allowed")
 
     await removePlugin("two")
     expect(local.remove).toHaveBeenLastCalledWith(["externalPlugin:two"])
@@ -119,5 +121,132 @@ describe("storage", () => {
     await local.set({ unrelated: 1 })
     await getPlugins()
     expect(local.get).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe("re-approval", () => {
+  const uuidTools = (overrides: Partial<Registration> = {}): Registration => ({
+    name: "UUID tools",
+    commands: [{ id: "uuid", title: "Copy new UUID" }],
+    sources: [{ id: "recent", mode: "commands" }],
+    ...overrides,
+  })
+
+  const stored = (overrides: Partial<StoredPlugin> = {}): StoredPlugin => ({
+    ...uuidTools(),
+    id: "plugin",
+    status: "allowed",
+    updatedAt: 0,
+    ...overrides,
+  })
+
+  describe("capabilities", () => {
+    it("lists the modes its sources use and whether any is dynamic", async () => {
+      const { capabilities } = await load()
+      expect(capabilities(uuidTools({ sources: [] }))).toEqual({ modes: [], dynamic: false })
+      expect(
+        capabilities(
+          uuidTools({
+            sources: [
+              { id: "a", mode: "tabs" },
+              { id: "b", mode: "commands", dynamic: true },
+              { id: "c", mode: "tabs" },
+            ],
+          }),
+        ),
+      ).toEqual({ modes: ["commands", "tabs"], dynamic: true })
+    })
+  })
+
+  describe("exceeds", () => {
+    const approved = { modes: ["commands" as const], dynamic: false }
+
+    it("is false for the same or fewer capabilities", async () => {
+      const { exceeds } = await load()
+      expect(exceeds(approved, approved)).toBe(false)
+      expect(exceeds({ modes: [], dynamic: false }, approved)).toBe(false)
+      expect(exceeds({ modes: ["commands"], dynamic: false }, { modes: ["commands", "tabs"], dynamic: true })).toBe(
+        false,
+      )
+    })
+
+    it("is true for a new mode or a new dynamic source", async () => {
+      const { exceeds } = await load()
+      expect(exceeds({ modes: ["commands", "tabs"], dynamic: false }, approved)).toBe(true)
+      expect(exceeds({ modes: ["commands"], dynamic: true }, approved)).toBe(true)
+    })
+  })
+
+  describe("nextStatus", () => {
+    const approved = { name: "UUID tools", modes: ["commands" as const], dynamic: false }
+
+    it("keeps new plugins pending and blocked plugins blocked", async () => {
+      const { nextStatus } = await load()
+      expect(nextStatus(undefined, uuidTools())).toBe("pending")
+      expect(nextStatus(stored({ status: "pending" }), uuidTools())).toBe("pending")
+      expect(nextStatus(stored({ status: "denied" }), uuidTools({ name: "Other" }))).toBe("denied")
+    })
+
+    it("keeps allowed plugins allowed when they change within what was approved", async () => {
+      const { nextStatus } = await load()
+      expect(nextStatus(stored({ approved }), uuidTools({ commands: [], description: "New" }))).toBe("allowed")
+      expect(nextStatus(stored({ approved }), uuidTools({ sources: [] }))).toBe("allowed")
+    })
+
+    it("asks again when an allowed plugin renames itself or grows", async () => {
+      const { nextStatus } = await load()
+      expect(nextStatus(stored({ approved }), uuidTools({ name: "Tab search" }))).toBe("pending")
+      expect(nextStatus(stored({ approved }), uuidTools({ sources: [{ id: "all", mode: "tabs" }] }))).toBe("pending")
+      expect(
+        nextStatus(stored({ approved }), uuidTools({ sources: [{ id: "recent", mode: "commands", dynamic: true }] })),
+      ).toBe("pending")
+    })
+
+    it("treats the stored registration as approved for plugins allowed before snapshots", async () => {
+      const { nextStatus } = await load()
+      expect(nextStatus(stored(), uuidTools({ commands: [] }))).toBe("allowed")
+      expect(nextStatus(stored(), uuidTools({ name: "Other" }))).toBe("pending")
+      expect(nextStatus(stored(), uuidTools({ sources: [{ id: "all", mode: "tabs", dynamic: true }] }))).toBe("pending")
+    })
+  })
+
+  describe("savePlugin", () => {
+    it("needs approval again after an allowed plugin grows, but not for edits within it", async () => {
+      mockStorage()
+      const { getPlugins, savePlugin, setStatus } = await load()
+      const status = async () => (await getPlugins())[0]?.status
+
+      expect(await savePlugin("plugin", uuidTools())).toBe("pending")
+      await setStatus("plugin", "allowed")
+      expect((await getPlugins())[0].approved).toEqual({ name: "UUID tools", modes: ["commands"], dynamic: false })
+
+      expect(await savePlugin("plugin", uuidTools({ commands: [] }))).toBe("allowed")
+      expect(await status()).toBe("allowed")
+
+      const grown = uuidTools({ name: "Tab search", sources: [{ id: "all", mode: "tabs", dynamic: true }] })
+      expect(await savePlugin("plugin", grown)).toBe("pending")
+      expect(await status()).toBe("pending")
+      expect(await savePlugin("plugin", uuidTools())).toBe("pending")
+
+      await savePlugin("plugin", grown)
+      await setStatus("plugin", "allowed")
+      expect(await savePlugin("plugin", grown)).toBe("allowed")
+    })
+
+    it("keeps blocked plugins blocked", async () => {
+      mockStorage()
+      const { getPlugins, savePlugin, setStatus } = await load()
+      await savePlugin("plugin", uuidTools())
+      await setStatus("plugin", "denied")
+      expect(await savePlugin("plugin", uuidTools({ name: "Other" }))).toBe("denied")
+      expect((await getPlugins())[0].approved).toBeUndefined()
+    })
+
+    it("records an approval for plugins allowed before snapshots", async () => {
+      mockStorage({ "externalPlugin:plugin": stored() })
+      const { getPlugins, savePlugin } = await load()
+      expect(await savePlugin("plugin", uuidTools({ commands: [] }))).toBe("allowed")
+      expect((await getPlugins())[0].approved).toEqual({ name: "UUID tools", modes: ["commands"], dynamic: false })
+    })
   })
 })
