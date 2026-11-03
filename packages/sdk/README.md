@@ -23,7 +23,7 @@ definePalettePlugin({
 })
 ```
 
-That's it. When your extension is installed, it registers with Palette. The user then sees **Allow “Toolbox” to add commands** at the top of ⌘⇧K, and once they approve it your commands appear in the list.
+That's it. When your extension is installed, it registers with Palette. Palette then tells the user a plugin is waiting for approval, and once they allow it in Palette's settings your commands appear in the list.
 
 A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 
@@ -103,7 +103,8 @@ Ask for as little as you can: addresses can carry tokens and other private data.
 
 ## Good to know
 
-- **Approval.** Nothing shows until the user allows your plugin. They can block or remove it later from **Manage plugins…**. Approved plugins receive only what they declared in `access`.
+- **Approval.** Nothing shows until the user allows your plugin in Palette's settings, which list its name, description and declared `access` next to its extension ID. They can turn it off or remove it later from settings or **Manage plugins…**. Approved plugins receive only what they declared in `access`.
+- **Text.** Palette removes control, bidi and zero-width characters from every string your plugin sends, then trims it.
 - **Registration.** Plugins register when installed or updated, and when the browser starts. If your commands change at runtime, call `register()` on the object `definePalettePlugin` returns.
 - **Re-approval.** The user approves your plugin's name, what its sources can see (the modes they use, and whether any is `dynamic`) and its `access`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, with your first `dynamic` source, or with more `access` puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
 - **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build.

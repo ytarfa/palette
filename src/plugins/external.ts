@@ -2,7 +2,6 @@ import { Blocks, Puzzle, ShieldCheck } from "lucide-react"
 import type { Effect, ItemData, ItemsResponse, RunResponse } from "@palette/sdk"
 import {
   cleanItems,
-  describeAccess,
   getPlugins,
   removePlugin,
   request,
@@ -12,7 +11,11 @@ import {
 } from "@/core/external"
 import { definePlugin, type Command, type PaletteContext, type RunResult } from "@/core/types"
 
-/** Approval requests from newly installed plugin extensions, at the top of ⌘⇧K. */
+/**
+ * A notice when plugins are waiting for approval. Approving happens only in
+ * settings, where the extension ID is shown, so nothing here runs on plugin
+ * text: the title and keywords are fixed, and Enter just opens settings.
+ */
 export const pluginRequests = definePlugin({
   id: "plugin-requests",
   name: "Plugin requests",
@@ -21,30 +24,19 @@ export const pluginRequests = definePlugin({
     {
       mode: "commands",
       async items() {
-        const pending = (await getPlugins()).filter((p) => p.status === "pending")
-        return pending.map((plugin) => ({
-          id: plugin.id,
-          title: `Allow “${plugin.name}” to add commands`,
-          subtitle: describeAccess(plugin.access),
-          group: "Plugin requests",
-          icon: ShieldCheck,
-          keywords: [plugin.name, plugin.description ?? "", "plugin"],
-          async run() {
-            await setStatus(plugin.id, "allowed")
-            return { keepOpen: true }
+        const pending = (await getPlugins()).filter((p) => p.status === "pending").length
+        if (!pending) return []
+        return [
+          {
+            id: "review",
+            title: pending === 1 ? "1 plugin is waiting for approval" : `${pending} plugins are waiting for approval`,
+            subtitle: "Open settings to review",
+            group: "Palette",
+            icon: ShieldCheck,
+            keywords: ["plugin", "request", "approve", "extensions"],
+            run: () => chrome.runtime.openOptionsPage(),
           },
-          actions: [
-            {
-              id: "deny",
-              title: "Block",
-              shortcut: "mod+backspace",
-              async run() {
-                await setStatus(plugin.id, "denied")
-                return { keepOpen: true }
-              },
-            },
-          ],
-        }))
+        ]
       },
     },
   ],
@@ -73,8 +65,10 @@ export const externalPlugins = definePlugin({
             subtitle: plugin.description,
             icon: Puzzle,
             hint: { allowed: "On", denied: "Blocked", pending: "Waiting for approval" }[plugin.status],
+            // Turning a plugin off is fine from here; allowing one happens in settings.
             async run() {
-              await setStatus(plugin.id, plugin.status === "allowed" ? "denied" : "allowed")
+              if (plugin.status !== "allowed") return chrome.runtime.openOptionsPage()
+              await setStatus(plugin.id, "denied")
               return { keepOpen: true }
             },
             actions: [

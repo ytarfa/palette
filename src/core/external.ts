@@ -1,6 +1,6 @@
 /**
  * Plugins from other extensions (see packages/sdk). They register with the
- * background worker, the user approves them in the palette, and the palette
+ * background worker, the user approves them in settings, and the palette
  * then asks them for items and to run commands over chrome.runtime messaging.
  *
  * Everything a plugin sends is untrusted: it's checked and trimmed here.
@@ -216,8 +216,18 @@ export function describeAccess(access: PluginAccess | undefined) {
 
 // Validation
 
-const text = (value: unknown, max: number) =>
-  typeof value === "string" && value.trim() ? value.slice(0, max) : undefined
+/**
+ * Control characters, bidi marks, embeddings, overrides and isolates, and
+ * zero-width characters. Plugins could use them to disguise their name or
+ * hide text, so they're removed from every string a plugin sends.
+ */
+// oxlint-disable-next-line no-control-regex
+const HIDDEN = /[\u0000-\u001F\u007F-\u009F؜​-‏‪-‮⁠⁦-⁩﻿]/g
+
+const text = (value: unknown, max: number) => {
+  const clean = typeof value === "string" ? value.replace(HIDDEN, "").trim() : ""
+  return clean ? clean.slice(0, max) : undefined
+}
 
 /** Icons may only be inline images or files from the plugin itself, so they can't track the user. */
 function icon(value: unknown, pluginId: string) {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { Registration } from "@palette/sdk"
 import type { StoredPlugin } from "./external"
-import { cleanRegistration, describeAccess, shared, tabInfo } from "./external"
+import { cleanItem, cleanRegistration, describeAccess, shared, tabInfo } from "./external"
 
 type Listener = (changes: Record<string, unknown>, area: string) => void
 
@@ -363,5 +363,70 @@ describe("describeAccess", () => {
     expect(describeAccess({ tab: "url", query: true })).toBe(
       "Sees the current tab's address and title, and what you type in the palette",
     )
+  })
+})
+
+const PLUGIN = "abcdefghijklmnopabcdefghijklmnop"
+
+describe("plugin strings", () => {
+  it("strips control characters", () => {
+    expect(cleanRegistration({ name: "Tool\u0000box\u0007\u001B[31m\u007F\u0085\u009F" }, PLUGIN)?.name).toBe("Toolbox[31m")
+    expect(cleanItem({ id: "a", title: "Line\none\ttwo\r" }, PLUGIN)?.title).toBe("Lineonetwo")
+  })
+
+  it("strips bidi marks, embeddings, overrides and isolates", () => {
+    // "Palette" written backwards behind a right-to-left override.
+    expect(cleanRegistration({ name: "‮ettelap" }, PLUGIN)?.name).toBe("ettelap")
+    const bidi = "‎‏؜‪‫‬‭‮⁦⁧⁨⁩"
+    expect(cleanRegistration({ name: `1${bidi}Password` }, PLUGIN)?.name).toBe("1Password")
+  })
+
+  it("strips zero-width characters", () => {
+    expect(cleanRegistration({ name: "﻿Pa​l‌e‍t⁠te" }, PLUGIN)?.name).toBe("Palette")
+  })
+
+  it("trims, and drops strings left empty", () => {
+    expect(cleanRegistration({ name: "  Toolbox ​ " }, PLUGIN)?.name).toBe("Toolbox")
+    expect(cleanRegistration({ name: "​‮ \u0000" }, PLUGIN)).toBeUndefined()
+    expect(cleanItem({ id: "a", title: "⁦⁩" }, PLUGIN)).toBeUndefined()
+  })
+
+  it("keeps ordinary text, emoji and non-Latin scripts", () => {
+    expect(cleanRegistration({ name: "Café 🎨 日本語 مرحبا", description: "UUIDs, timestamps" }, PLUGIN)).toMatchObject({
+      name: "Café 🎨 日本語 مرحبا",
+      description: "UUIDs, timestamps",
+    })
+  })
+
+  it("cleans every string field of an item", () => {
+    const z = "​‮"
+    expect(
+      cleanItem(
+        {
+          id: `${z}id`,
+          title: `${z}Title`,
+          subtitle: `${z}Sub`,
+          keywords: [`${z}one`, z],
+          group: `${z}Group`,
+          hint: `${z}Hint`,
+          shortcut: `${z}mod+k`,
+          childrenPlaceholder: `${z}Search`,
+        },
+        PLUGIN,
+      ),
+    ).toMatchObject({
+      id: "id",
+      title: "Title",
+      subtitle: "Sub",
+      keywords: ["one"],
+      group: "Group",
+      hint: "Hint",
+      shortcut: "mod+k",
+      childrenPlaceholder: "Search",
+    })
+  })
+
+  it("limits length after cleaning", () => {
+    expect(cleanRegistration({ name: "​".repeat(100) + "x".repeat(100) }, PLUGIN)?.name).toBe("x".repeat(60))
   })
 })
