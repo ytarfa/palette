@@ -51,7 +51,7 @@ Until it's on the Chrome Web Store:
 
 To update, download the new release, unzip it over the same folder, and click the reload button on Palette's card in `chrome://extensions`. All releases are listed on the [releases page](https://github.com/ytarfa/palette/releases).
 
-Requires Chrome 127 or later.
+Requires Chrome 130 or later.
 
 <details>
 <summary>Or build it from source</summary>

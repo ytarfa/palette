@@ -2,7 +2,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { createRegistry } from "@/core/registry"
 import { plugins } from "@/plugins"
-import { embedded } from "./host"
+import { embedded, trusted } from "./host"
 import { Palette } from "./palette"
 import "./index.css"
 
@@ -14,8 +14,11 @@ const applyTheme = () => root.classList.toggle("dark", dark.matches)
 applyTheme()
 dark.addEventListener("change", applyTheme)
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Palette registry={createRegistry(plugins)} />
-  </StrictMode>,
-)
+void trusted.then((ok) => {
+  if (!ok) return
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <Palette registry={createRegistry(plugins)} />
+    </StrictMode>,
+  )
+})
