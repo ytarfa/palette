@@ -1,10 +1,11 @@
 import { ChevronRight, Puzzle } from "lucide-react"
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Switch } from "@/components/ui/switch"
-import { getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
+import { describeAccess, getPlugins, removePlugin, setStatus, type StoredPlugin } from "@/core/external"
 import { formatShortcut } from "@/core/keys"
+import { builtInNames, pluginName } from "@/core/plugin-names"
 import {
   getSettings,
   isCommandEnabled,
@@ -21,6 +22,8 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
   const [settings, setSettings] = useState<Settings>()
   const [external, setExternal] = useState<StoredPlugin[]>([])
   const [shortcuts, setShortcuts] = useState<chrome.commands.Command[]>([])
+  // Same renaming as in the palette, so a plugin can't pass for a built-in one here either.
+  const reserved = useMemo(() => builtInNames(plugins), [plugins])
 
   useEffect(() => {
     void getSettings().then(setSettings)
@@ -111,7 +114,7 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
 
       <Section
         title="From other extensions"
-        description="Extensions built with @palette/sdk can add their own commands. They see the current tab's title and address when the palette asks them for commands."
+        description="Extensions built with @palette/sdk can add their own commands. Each one sees only what's listed under it. Check the extension ID before allowing one: the name and description come from the plugin itself."
       >
         {external.length === 0 && (
           <p className="py-3 text-sm text-muted-foreground">No plugins installed.</p>
@@ -120,18 +123,36 @@ export function Options({ plugins }: { plugins: Plugin[] }) {
           <Row
             key={plugin.id}
             icon={<Puzzle className="size-4 text-muted-foreground" />}
-            title={plugin.name}
-            description={plugin.status === "pending" ? "Waiting for your approval" : plugin.description}
+            title={pluginName(plugin.name, reserved)}
+            description={[plugin.description, describeAccess(plugin.access)].filter(Boolean).join(" · ")}
+            detail={`Extension ID ${plugin.id}`}
           >
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => void removePlugin(plugin.id)}>
-                Remove
-              </Button>
-              <Switch
-                checked={plugin.status === "allowed"}
-                onCheckedChange={(on) => void setStatus(plugin.id, on ? "allowed" : "denied")}
-                aria-label={plugin.name}
-              />
+              {plugin.status !== "allowed" && (
+                <span className="text-xs text-muted-foreground">
+                  {plugin.status === "pending" ? "Waiting for approval" : "Blocked"}
+                </span>
+              )}
+              {plugin.status === "pending" ? (
+                <Button variant="ghost" size="sm" onClick={() => void setStatus(plugin.id, "denied")}>
+                  Block
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => void removePlugin(plugin.id)}>
+                  Remove
+                </Button>
+              )}
+              {plugin.status === "allowed" ? (
+                <Switch
+                  checked
+                  onCheckedChange={() => void setStatus(plugin.id, "denied")}
+                  aria-label={`Turn off ${pluginName(plugin.name, reserved)}`}
+                />
+              ) : (
+                <Button size="sm" onClick={() => void setStatus(plugin.id, "allowed")}>
+                  Allow
+                </Button>
+              )}
             </div>
           </Row>
         ))}
@@ -204,11 +225,14 @@ function Row({
   icon,
   title,
   description,
+  detail,
   children,
 }: {
   icon?: ReactNode
   title: string
   description?: string
+  /** A smaller monospace line, e.g. an extension ID. */
+  detail?: string
   children: ReactNode
 }) {
   return (
@@ -217,6 +241,7 @@ function Row({
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium">{title}</div>
         {description && <div className="text-xs text-muted-foreground">{description}</div>}
+        {detail && <div className="mt-0.5 font-mono text-[11px] break-all text-muted-foreground">{detail}</div>}
       </div>
       {children}
     </div>

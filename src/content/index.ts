@@ -6,7 +6,14 @@
  *
  * Built as a standalone IIFE (see vite.content.config.ts).
  */
-import type { FallbackMessage, FromFrame, ModeId, OpenMessage, ToFrame } from "@/shared/messages"
+import type {
+  FallbackMessage,
+  FromFrame,
+  ModeId,
+  OpenMessage,
+  RegisterFrameMessage,
+  ToFrame,
+} from "@/shared/messages"
 
 declare global {
   interface Window {
@@ -18,7 +25,10 @@ declare global {
 // running in the page. Replace it.
 window.__palette?.dispose()
 
+// Tags our messages to the frame, which ignores any without it (see src/background/frames.ts).
 const token = crypto.randomUUID()
+// getURL returns a per-session URL (use_dynamic_url), but the frame runs at the extension's origin.
+const frameOrigin = `chrome-extension://${chrome.runtime.id}`
 let host: HTMLElement | undefined
 let frame: HTMLIFrameElement | undefined
 let ready = false
@@ -31,7 +41,7 @@ let readyTimer: number | undefined
 const alive = () => !!chrome.runtime?.id
 
 function post(message: ToFrame) {
-  frame?.contentWindow?.postMessage({ palette: token, ...message }, "*")
+  frame?.contentWindow?.postMessage({ palette: token, ...message }, frameOrigin)
 }
 
 function createFrame() {
@@ -39,13 +49,18 @@ function createFrame() {
   host.style.cssText = "all: initial; position: fixed; inset: 0; z-index: 2147483647; display: none;"
   const shadow = host.attachShadow({ mode: "closed" })
   frame = document.createElement("iframe")
-  frame.src = chrome.runtime.getURL(`palette.html#${token}`)
   frame.allow = "clipboard-write"
   // A color-scheme mismatch with the page would make the frame opaque.
   frame.style.cssText =
     "all: initial; width: 100%; height: 100%; border: 0; color-scheme: normal; background: transparent;"
   shadow.append(frame)
   document.documentElement.append(host)
+  // The frame claims the token as it loads, so register it first.
+  const iframe = frame
+  const message: RegisterFrameMessage = { type: "palette:register-frame", token }
+  void chrome.runtime.sendMessage(message).then(() => {
+    iframe.src = chrome.runtime.getURL("palette.html")
+  })
 }
 
 function open(mode: ModeId) {
@@ -101,10 +116,9 @@ function unconceal() {
 }
 
 function onFrameMessage(e: MessageEvent) {
-  if (!frame || e.source !== frame.contentWindow) return
-  const data = e.data as (FromFrame & { palette?: string }) | undefined
-  if (data?.palette !== token) return
-  switch (data.type) {
+  if (!frame || e.source !== frame.contentWindow || e.origin !== frameOrigin) return
+  const data = e.data as FromFrame | undefined
+  switch (data?.type) {
     case "ready":
       ready = true
       clearTimeout(readyTimer)

@@ -11,7 +11,8 @@ export const PROTOCOL = 1
 
 /**
  * Palette's extension ID when loaded unpacked (pinned by the manifest `key`).
- * TODO: switch to the Chrome Web Store ID once published.
+ * The key is public, so another unpacked extension can claim this ID too.
+ * TODO: switch to the Chrome Web Store ID once published. No one else can claim it.
  */
 export const PALETTE_ID = "jcjopjoglbklaejmahmfnhmanfoomnpk"
 
@@ -30,7 +31,7 @@ export interface ItemData {
   icon?: string
   /** Extra words to match on when searching. */
   keywords?: string[]
-  /** Group heading. Defaults to the plugin's name. */
+  /** Shown after the plugin's name in the group heading. Built-in names like "Tabs" are ignored. */
   group?: string
   /** Muted text on the right. */
   hint?: string
@@ -46,8 +47,26 @@ export interface ItemData {
 export interface SourceData {
   id: string
   mode: ModeId
-  /** Ask again on every keystroke. Otherwise asked once when the palette opens. */
+  /**
+   * Ask again on every keystroke. Otherwise asked once when the palette opens.
+   * Needs `access.query`: without it, Palette treats the source as static.
+   */
   dynamic?: boolean
+}
+
+/**
+ * What Palette sends with each request. Ask only for what you need: the user
+ * sees this when approving the plugin. By default, plugins see neither.
+ */
+export interface PluginAccess {
+  /**
+   * The tab the palette was opened from. "origin" sends only the site, e.g.
+   * `https://example.com`. "url" adds the full address, title and tab IDs.
+   * Defaults to "none".
+   */
+  tab?: "none" | "origin" | "url"
+  /** What the user types in the palette. Without it, `query` is always empty. */
+  query?: boolean
 }
 
 export interface Registration {
@@ -56,10 +75,14 @@ export interface Registration {
   /** Static commands, listed under ⌘⇧K. */
   commands: ItemData[]
   sources: SourceData[]
+  access?: PluginAccess
 }
 
-/** The tab the palette was opened from. */
+/** The tab the palette was opened from, as much as `access.tab` allows. */
 export interface TabInfo {
+  /** The site, e.g. `https://example.com`. Sent with "origin" and "url" access. */
+  origin?: string
+  /** The rest is sent with "url" access only. */
   id?: number
   windowId?: number
   url?: string
@@ -68,7 +91,7 @@ export interface TabInfo {
 
 /** What Palette should do after a command runs. Plugins can't touch the clipboard from a service worker, so Palette does it. */
 export interface Effect {
-  /** Copy this text to the clipboard. */
+  /** Copy this text to the clipboard, up to 100,000 characters. */
   copy?: string
   /** Open an http(s) URL, in the current tab unless `newTab`. */
   open?: string
@@ -91,7 +114,9 @@ export type RegisterResponse = { ok: true; status: PluginStatus } | { ok: false;
 
 interface Request {
   palette: typeof PROTOCOL
+  /** Empty unless the plugin declared `access.query`. */
   query: string
+  /** Missing unless the plugin declared `access.tab`. */
   tab?: TabInfo
 }
 

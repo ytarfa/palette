@@ -6,7 +6,7 @@ An example [Palette](../../README.md) plugin, built with [`@palette/sdk`](../../
 - **Copy tab as…**, a nested list: Markdown, HTML or Org-mode link, or just the title
 - **Base64 encode**, **Base64 decode** and **URL encode** for whatever you type
 
-It needs no permissions: everything it does is copying text, which it asks Palette to do.
+It needs no Chrome permissions: everything it does is copying text, which it asks Palette to do. It does ask Palette for the current tab's address and title, for **Copy tab as…**, and for what you type, for the encoders. You see both when you approve it.
 
 ## Try it
 

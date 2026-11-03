@@ -23,7 +23,7 @@ definePalettePlugin({
 })
 ```
 
-That's it. When your extension is installed, it registers with Palette. The user then sees **Allow “Toolbox” to add commands** at the top of ⌘⇧K, and once they approve it your commands appear in the list.
+That's it. When your extension is installed, it registers with Palette. Palette then tells the user a plugin is waiting for approval, and once they allow it in Palette's settings your commands appear in the list.
 
 A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 
@@ -35,21 +35,21 @@ A complete example lives in [`examples/toolbox`](../../examples/toolbox).
 | `title`, `subtitle` | What's shown in the list |
 | `icon` | A `data:image/...` URL, or a `chrome-extension://<your id>/...` file listed in your `web_accessible_resources` |
 | `keywords` | Extra words to match when searching |
-| `group` | Group heading. Defaults to your plugin's name |
+| `group` | Shown after your plugin's name in the group heading, e.g. "My plugin · Email". Built-in names like "Tabs" are ignored |
 | `hint` | Muted text on the right |
 | `shortcut` | Shortcut shown next to the command, e.g. `"mod+shift+u"`. Display only |
 | `alwaysShow` | Show regardless of what's typed |
 | `run(ctx)` | Runs in your service worker. Can return an effect, see below |
 | `children` | `{ placeholder, items(ctx) }`: open a nested list instead of running |
 
-`ctx` is `{ query, tab }`: what's typed, and the `id`, `windowId`, `url` and `title` of the tab the palette was opened from.
+`ctx` is `{ query, tab }`: what's typed, and the tab the palette was opened from. Both are empty unless you ask for them, see [Access](#access).
 
 ### Effects
 
 Service workers can't use the clipboard, and Palette closes after a command runs. Return an effect to have Palette do the last step:
 
 ```ts
-run: () => ({ copy: "text" })                        // copy to the clipboard
+run: () => ({ copy: "text" })                        // copy to the clipboard (up to 100,000 characters)
 run: () => ({ open: "https://example.com" })         // open in the current tab
 run: () => ({ open: "https://...", newTab: true })   // or in a new tab
 run: () => ({ keepOpen: true })                      // stay open and reload the list
@@ -78,11 +78,46 @@ definePalettePlugin({
 })
 ```
 
-Sources without `dynamic` are asked once each time the palette opens. Palette waits up to 1.5 seconds for an answer and skips plugins that are slower.
+Sources without `dynamic` are asked once each time the palette opens. Dynamic sources need `access.query`, otherwise they're asked once too. Palette waits up to 1.5 seconds for an answer and skips plugins that are slower.
+
+## Access
+
+By default your plugin sees neither the current tab nor what's typed. Declare what you need, and the user sees it when approving your plugin:
+
+```ts
+definePalettePlugin({
+  name: "Toolbox",
+  access: { tab: "url", query: true },
+  // ...
+})
+```
+
+| `access` | `ctx` gets |
+| --- | --- |
+| `tab: "none"` (default) | No `tab` |
+| `tab: "origin"` | `tab.origin` only, e.g. `https://example.com`. Nothing on pages without one, like `chrome://` pages |
+| `tab: "url"` | `tab.origin`, `url`, `title`, `id` and `windowId` |
+| `query: true` | `query`, what's typed, in every mode your sources list in. Otherwise it's always `""` |
+
+Ask for as little as you can: addresses can carry tokens and other private data.
+
+## Who can send requests
+
+Your plugin only answers messages from Palette's extension ID (`PALETTE_ID`, or the `paletteId` you pass). It drops requests that aren't well formed: an unknown `type`, ids that aren't short strings, a `query` over 10,000 characters, or a `tab` with fields of the wrong type. `items`, `children` and `run` only ever see the documented fields.
+
+Palette isn't on the Chrome Web Store yet, so its ID comes from the public `key` in its manifest. Any extension loaded unpacked with the same key gets the same ID, and can then do anything Palette can: read your registration, ask for your items and children, run your commands with any `query` and `tab`, and read what they return. Until that changes:
+
+- **Don't return secrets.** Assume titles, subtitles, children, effects and error messages can be read by another extension.
+- **Don't trust `query` or `tab`.** `tab.url` might not be a page the user has open. Check values before using them, especially in URLs or API calls.
+- **Be careful with commands that change things**, like writing to an API with the user's credentials. Another extension could run them without the user picking them.
+
+Once Palette is published, `PALETTE_ID` will switch to its Chrome Web Store ID, which no other extension can claim. Pass `paletteId` to keep talking to an unpacked build.
 
 ## Good to know
 
-- **Approval.** Nothing shows until the user allows your plugin. They can block or remove it later from **Manage plugins…**. Approved plugins receive the current tab's URL and title with each request.
+- **Approval.** Nothing shows until the user allows your plugin in Palette's settings, which list its name, description and declared `access` next to its extension ID. They can turn it off or remove it later from settings or **Manage plugins…**. Approved plugins receive only what they declared in `access`.
+- **Text.** Palette removes control, bidi and zero-width characters from every string your plugin sends, then trims it.
 - **Registration.** Plugins register when installed or updated, and when the browser starts. If your commands change at runtime, call `register()` on the object `definePalettePlugin` returns.
-- **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build.
+- **Re-approval.** The user approves your plugin's name, what its sources can see (the modes they use, and whether any is `dynamic`) and its `access`. Changing commands or descriptions keeps the approval. Registering under a new name, with a source in a new mode, with your first `dynamic` source, or with more `access` puts the plugin back to pending until the user allows it again, and `register()` resolves with `status: "pending"`.
+- **Palette's ID.** Messages go to `PALETTE_ID`. Pass `paletteId` to point at a different build. Another extension can claim the ID for now, see [Who can send requests](#who-can-send-requests).
 - **Protocol.** Messages are plain JSON with a `palette` version field, defined in [`src/protocol.ts`](src/protocol.ts), if you'd rather not use this package.

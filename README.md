@@ -43,7 +43,7 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 - **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
 - **Light and dark**, following your system.
 - **Extensible.** Everything in the list comes from a [plugin](#plugins). Other extensions can add their own commands too, once you approve them.
-- **Private.** Everything happens on your device. No network requests, no analytics, no data collected. Plugins you approve see the current tab's title and address when the palette asks them for commands.
+- **Private.** Everything happens on your device. No network requests, no analytics, no data collected. Plugins from other extensions see the current tab or what you type only if they ask, and you see what they ask for before approving them.
 
 ## Install
 
@@ -55,7 +55,7 @@ Until it's on the Chrome Web Store:
 
 To update, download the new release, unzip it over the same folder, and click the reload button on Palette's card in `chrome://extensions`. All releases are listed on the [releases page](https://github.com/ytarfa/palette/releases).
 
-Requires Chrome 127 or later.
+Requires Chrome 130 or later.
 
 <details>
 <summary>Or build it from source</summary>
@@ -236,10 +236,10 @@ definePalettePlugin({
 ```
 
 1. When the plugin is installed, it registers its commands with Palette. Palette's toolbar icon shows a badge.
-2. **Allow “Toolbox” to add commands** appears at the top of ⌘⇧K. <kbd>↵</kbd> allows it, <kbd>⌘</kbd><kbd>⌫</kbd> blocks it.
+2. ⌘⇧K shows **1 plugin is waiting for approval**, which opens Palette's settings. There, next to the plugin's name, description and extension ID, it says what the plugin will see: the current tab's site or full address, and what you type, only if it declared them in `access`. **Allow** turns it on and **Block** turns it down. Plugins can only be allowed from settings, never from the palette.
 3. Its commands show up in the list. Picking one asks the plugin to run it, and the plugin can reply with something for Palette to do, like copying text or opening a page.
 
-The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, and only shows icons embedded in the plugin itself. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them on or off, or remove them.
+The plugin's code stays in its own extension, with its own permissions and its own Web Store review. Palette checks everything a plugin sends, strips control, bidi and zero-width characters from its text, and only shows icons embedded in the plugin itself. If an approved plugin later renames itself or asks for more (a new mode, a source that sees every keystroke, or more of the current tab or what you type), it goes back to waiting for approval. **Manage plugins…** in ⌘⇧K lists plugins so you can turn them off or remove them; turning one back on happens in settings.
 
 See the [SDK's README](packages/sdk) for the full API, and [`examples/toolbox`](examples/toolbox) for a complete plugin to load next to Palette.
 
@@ -307,7 +307,7 @@ docs/                  README banners and screenshots
 
 After a rebuild, click the reload button on the extension's card in `chrome://extensions`. Open tabs pick up the new content script automatically.
 
-The manifest pins Palette's extension ID to `jcjopjoglbklaejmahmfnhmanfoomnpk` when loaded unpacked, so plugins can find it. The Chrome Web Store will assign a different one, which `PALETTE_ID` in the SDK will then need to use.
+The manifest pins Palette's extension ID to `jcjopjoglbklaejmahmfnhmanfoomnpk` when loaded unpacked, so plugins can find it. The `key` behind it is public, so any unpacked extension that copies it gets the same ID and can send requests to plugins as if it were Palette ([what plugins should do about it](packages/sdk/README.md#who-can-send-requests)). The Chrome Web Store will assign an ID no other extension can claim, and `PALETTE_ID` in the SDK will then switch to it.
 
 To regenerate the icons after editing `public/icons/icon.svg`:
 

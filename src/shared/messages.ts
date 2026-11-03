@@ -14,7 +14,18 @@ export interface FallbackMessage {
   mode: ModeId
 }
 
-/** content script → palette frame (window.postMessage) */
+/** content script → background, before it creates the palette frame */
+export interface RegisterFrameMessage {
+  type: "palette:register-frame"
+  token: string
+}
+
+/** palette frame → background. The response is the token its content script registered, if any. */
+export interface ClaimFrameMessage {
+  type: "palette:claim-frame"
+}
+
+/** content script → palette frame (window.postMessage), tagged with the frame token */
 export type ToFrame =
   | { type: "open"; mode: ModeId }
   | { type: "focus" }
