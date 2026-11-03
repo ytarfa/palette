@@ -171,6 +171,18 @@ describe("screenshots plugin", () => {
     expect(captureVisibleTab).toHaveBeenCalledWith(1, expect.objectContaining({ format: "png" }))
   })
 
+  it("never asks for a negative wait, which browsers wrap to days", async () => {
+    // A fresh module, so this is its first capture (`lastCapture` still 0).
+    vi.resetModules()
+    const fresh = (await import("./screenshots")).default
+    const setTimeout = vi.spyOn(globalThis, "setTimeout")
+    const copy = (await commandsFor(fresh, "https://example.com")).find((c) => c.id === "copy-visible")!
+    await copy.run!(context("https://example.com"))
+    const delays = setTimeout.mock.calls.map(([, ms]) => ms ?? 0)
+    expect(delays.every((ms) => ms >= 0 && ms <= 1000)).toBe(true)
+    setTimeout.mockRestore()
+  })
+
   it("retries when Chrome's capture quota is exceeded", async () => {
     vi.useFakeTimers()
     captureVisibleTab

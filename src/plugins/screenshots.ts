@@ -72,7 +72,11 @@ export function slicePixels(slice: Slice, scrollTop: number, viewportHeight: num
   return { sy, dy, height: Math.max(0, Math.min(height, Math.ceil(viewportHeight * scale) - sy)) }
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+/**
+ * Browsers wrap timer delays to 32 bits, so a large negative delay (e.g. the
+ * first capture, when `lastCapture` is 0) would wait for days. Clamp it.
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)))
 
 let lastCapture = 0
 
