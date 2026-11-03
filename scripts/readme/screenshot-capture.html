@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="readme.css" />
+    <style>
+      body {
+        width: 1280px;
+        height: 800px;
+      }
+      /* Cut off by the bottom edge. */
+      .window {
+        width: 1040px;
+        height: 600px;
+        margin: 44px auto 0;
+        border-radius: 14px 14px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="caption">
+      <h1>Copy and capture any page.</h1>
+      <p>Screenshots, clean links and Markdown, straight to the clipboard.</p>
+    </header>
+    <div class="window">
+      <div class="toolbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/toSorted</div>
+        <div class="ext"><img src="/icons/128.png" alt="" /></div>
+      </div>
+      <div class="viewport">
+        <div class="page">
+          <small>JavaScript › Reference › Array</small>
+          <h2>Array.prototype.toSorted()</h2>
+          <p>The <code>toSorted()</code> method of Array instances is the copying version of the <code>sort()</code> method. It returns a new array with the elements sorted in ascending order.</p>
+          <p>When used on sparse arrays, the <code>toSorted()</code> method iterates empty slots as if they have the value <code>undefined</code>.</p>
+        </div>
+        <iframe></iframe>
+      </div>
+    </div>
+    <script src="readme.js"></script>
+  </body>
+</html>

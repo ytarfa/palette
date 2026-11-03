@@ -4,8 +4,16 @@
 </picture>
 
 <p align="center">
+  <a href="https://github.com/ytarfa/palette/releases/latest"><img src="https://img.shields.io/github/v/release/ytarfa/palette?label=release&color=1d1d1f" alt="Latest release" /></a>
+  <a href="https://github.com/ytarfa/palette/actions/workflows/release.yml"><img src="https://github.com/ytarfa/palette/actions/workflows/release.yml/badge.svg" alt="Release workflow status" /></a>
+  <img src="https://img.shields.io/badge/Chrome-130%2B-1d1d1f?logo=googlechrome&logoColor=white" alt="Chrome 130 or later" />
+  <img src="https://img.shields.io/badge/data%20collected-none-1d1d1f" alt="No data collected" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ytarfa/palette?color=1d1d1f" alt="MIT license" /></a>
+</p>
+
+<p align="center">
   <a href="#install">Install</a> ·
-  <a href="#features">Features</a> ·
+  <a href="#highlights">Highlights</a> ·
   <a href="#keyboard">Keyboard</a> ·
   <a href="#site-commands">Site commands</a> ·
   <a href="#plugins">Plugins</a> ·
@@ -15,35 +23,93 @@
 
 <br />
 
-Code editors have a command palette: one shortcut, type a few letters, done. This Chrome extension brings it to the browser. **⌘⇧P** jumps to any open tab, and **⌘⇧K** runs any browser action.
+Code editors have a command palette: one shortcut, type a few letters, done. This Chrome extension brings it to the browser.
+
+<p align="center">
+  <kbd>⌘</kbd><kbd>⇧</kbd><kbd>P</kbd> jumps to any open tab &nbsp;·&nbsp; <kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd> runs any browser action
+</p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-tabs-dark.png" />
-    <img src="docs/screenshot-tabs.png" width="49%" alt="The tab switcher listing open tabs, most recently used first" />
-  </picture>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-commands-dark.png" />
-    <img src="docs/screenshot-commands.png" width="49%" alt="The command list, with Chrome's shortcuts next to each command" />
+    <source media="(prefers-color-scheme: dark)" srcset="docs/demo-dark.gif" />
+    <img src="docs/demo.gif" alt="Opening the tab switcher with ⌘⇧P, typing “lin” to find the Linear tab, then typing “>” to switch to commands and “dupl” to find Duplicate tab" />
   </picture>
 </p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/ytarfa/palette/releases/latest/download/palette.zip"><b>Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">How to install</a>
+</p>
 
-- **Tab switcher.** Fuzzy search every open tab across all your windows, most recently used first. Hold ⌘⇧ and tap P to walk down the list, then let go to switch, just like in VS Code.
-- **Commands.** About 30 actions for tabs, pages and windows: duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, copy the URL as a Markdown link, zoom, and more. Chrome's own shortcuts are shown next to them, so you learn them as you go.
-- **Site commands.** Commands for the site you're on, for 19 sites: GitHub, Jira, Google Docs, YouTube and more. Turn each one on or off in settings.
-- **Page tools.** On any page: copy the URL without tracking parameters, go up a level, open it in the Wayback Machine, search the site.
-- **Screenshots.** Copy the visible area or the whole page to the clipboard, or save it as PNG or JPG.
-- **Copy and read.** Copy the selection as a Markdown quote that links back to the exact text, or the whole article as Markdown. Reader view, dark mode on any page, print or save as PDF.
-- **Tab cleanup.** Close tabs you haven't used in a day, a week or a month, with a preview first.
-- **Site data** (off by default). Clear cookies and storage for the current site, or copy its cookies as a header, JSON or cookies.txt.
+## Highlights
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-tabs-dark.png" />
+        <img src="docs/screenshot-tabs.png" alt="The tab switcher listing open tabs, most recently used first" />
+      </picture>
+      <h3>Tab switcher</h3>
+      Fuzzy search every open tab across all your windows, most recently used first. Hold <kbd>⌘</kbd><kbd>⇧</kbd> and tap <kbd>P</kbd> to walk down the list, let go to switch, just like in VS Code.
+    </td>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-commands-dark.png" />
+        <img src="docs/screenshot-commands.png" alt="The command list, with Chrome's shortcuts next to each command" />
+      </picture>
+      <h3>About 30 browser commands</h3>
+      Duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, zoom and more. Chrome's own shortcuts sit next to them, so you learn them as you go.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-github-dark.png" />
+        <img src="docs/screenshot-github.png" alt="GitHub commands on a pull request page" />
+      </picture>
+      <h3>Commands for 19 sites</h3>
+      GitHub, Jira, Google Docs, YouTube, AWS and <a href="#site-commands">more</a>. Copy a branch name, a clean link or a checkout command, or jump straight to the page you want.
+    </td>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-capture-dark.png" />
+        <img src="docs/screenshot-capture.png" alt="Copy commands and screenshot commands on an MDN article" />
+      </picture>
+      <h3>Copy and capture</h3>
+      Copy the visible area or the whole page as an image, or save it as PNG or JPG. Copy the URL without tracking parameters, a Markdown link, the selection as a quote, or the whole article as Markdown.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-cleanup-dark.png" />
+        <img src="docs/screenshot-cleanup.png" alt="A preview of six tabs that haven't been used in a week, with how long ago each was used" />
+      </picture>
+      <h3>Tab cleanup</h3>
+      Close every tab you haven't touched in a day, a week or a month. You see the list first, and pinned or playing tabs are never closed.
+    </td>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-plugins-dark.png" />
+        <img src="docs/screenshot-plugins.png" alt="Palette's settings, with one plugin allowed and another waiting for approval" />
+      </picture>
+      <h3>Plugins, on your terms</h3>
+      Everything in the list is a <a href="#plugins">plugin</a>, and other extensions can add their own. Each one waits for your approval and only sees what it asked for.
+    </td>
+  </tr>
+</table>
+
+### And also
+
+- **Page tools.** Go up a level, open the page in the Wayback Machine, search the site you're on.
+- **Reading.** Reader view, dark mode on any page, print or save as PDF.
 - **Open or search anything.** Type a domain to open it, or any text to search with your default search engine.
+- **Site data** (off by default). Clear cookies and storage for the current site, or copy its cookies as a header, JSON or cookies.txt.
 - **Isolated from the page.** The palette runs in its own frame, so site styles can't break it and it can't break the site.
 - **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
+- **Yours to trim.** Turn any plugin, site or single command on or off in settings.
 - **Light and dark**, following your system.
-- **Extensible.** Everything in the list comes from a [plugin](#plugins). Other extensions can add their own commands too, once you approve them.
-- **Private.** Everything happens on your device. No network requests, no analytics, no data collected. Plugins from other extensions see the current tab or what you type only if they ask, and you see what they ask for before approving them.
+- **Private.** Everything happens on your device. No network requests, no analytics, no data collected.
 
 ## Install
 
@@ -89,14 +155,7 @@ On Windows and Linux, use Ctrl instead of ⌘. You can change both shortcuts at 
 
 ## Site commands
 
-When you're on a site Palette knows, its commands show up at the top of ⌘⇧K:
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-github-dark.png" />
-    <img src="docs/screenshot-github.png" width="80%" alt="GitHub commands on a pull request page" />
-  </picture>
-</p>
+When you're on a site Palette knows, its commands show up at the top of ⌘⇧K, like the [GitHub ones above](#highlights):
 
 | Site | |
 | --- | --- |
@@ -285,7 +344,7 @@ src/components/ui/     shadcn/ui components
 packages/sdk/          @palette/sdk, for plugins in other extensions
 examples/toolbox/      Example plugin extension
 scripts/               README image rendering
-docs/                  README banners and screenshots
+docs/                  README banners, screenshots and demo GIFs
 ```
 
 | Script | |
@@ -295,7 +354,7 @@ docs/                  README banners and screenshots
 | `pnpm --filter palette-toolbox build` | Builds the example plugin into `examples/toolbox/dist/` |
 | `pnpm test` | Runs the tests (Vitest) |
 | `pnpm lint` | Lints with oxlint |
-| `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome, using the real palette from `dist/` and a set of demo tabs |
+| `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome (and ffmpeg for the GIFs), using the real palette from `dist/` and a set of demo tabs. Pass file names to render only those |
 
 ### Continuous integration and releases
 

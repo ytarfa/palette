@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="readme.css" />
+    <style>
+      body {
+        width: 960px;
+        height: 600px;
+      }
+      .window {
+        position: relative;
+        width: 920px;
+        height: 560px;
+        margin: 20px auto 0;
+      }
+      /* The keys being pressed, shown by the render script. */
+      .keys {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: rgba(29, 29, 31, 0.86);
+        color: #fff;
+        font-size: 22px;
+        font-weight: 550;
+        opacity: 0;
+        transform: translateX(-50%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+      .dark .keys {
+        background: rgba(242, 242, 243, 0.92);
+        color: #1d1d1f;
+      }
+      .keys.on {
+        opacity: 1;
+      }
+      .keys kbd {
+        min-width: 38px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.14);
+        font: inherit;
+        text-align: center;
+      }
+      .dark .keys kbd {
+        background: rgba(0, 0, 0, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="toolbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url">vite.dev/guide</div>
+        <div class="ext"><img src="/icons/128.png" alt="" /></div>
+      </div>
+      <div class="viewport">
+        <div class="page">
+          <small>Guide</small>
+          <h2>Getting started</h2>
+          <p>Vite is a build tool that aims to provide a faster and leaner development experience for modern web projects. It has two major parts: a dev server with rich built-in features, and a build command that bundles your code for production.</p>
+          <p>To scaffold a project, run <code>npm create vite@latest</code> and follow the prompts. Then pick a framework and a variant, and start the dev server with <code>npm run dev</code>.</p>
+          <p>Vite is opinionated and comes with sensible defaults out of the box, but is also highly extensible through its plugin API and JavaScript API with full typing support.</p>
+        </div>
+        <iframe></iframe>
+      </div>
+      <div class="keys"></div>
+    </div>
+    <script src="readme.js"></script>
+    <script>
+      // Called by the render script: showKeys(["⌘", "⇧", "P"]), or showKeys([]) to hide.
+      function showKeys(keys) {
+        const el = document.querySelector(".keys")
+        el.replaceChildren(...keys.map((key) => Object.assign(document.createElement("kbd"), { textContent: key })))
+        el.classList.toggle("on", keys.length > 0)
+      }
+    </script>
+  </body>
+</html>

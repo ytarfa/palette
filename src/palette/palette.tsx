@@ -338,7 +338,7 @@ export function Palette({ registry }: { registry: Registry }) {
                     </span>
                   )}
                   {item.hint && (
-                    <CommandShortcut className="tracking-normal">{item.hint}</CommandShortcut>
+                    <CommandShortcut className="shrink-0 tracking-normal whitespace-nowrap">{item.hint}</CommandShortcut>
                   )}
                   {item.shortcut && <CommandShortcut>{formatShortcutText(item.shortcut)}</CommandShortcut>}
                   {item.children && (
