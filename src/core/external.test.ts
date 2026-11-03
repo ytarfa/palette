@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { Registration } from "@palette/sdk"
 import type { StoredPlugin } from "./external"
+import { cleanRegistration, describeAccess, shared, tabInfo } from "./external"
 
 type Listener = (changes: Record<string, unknown>, area: string) => void
 
@@ -143,7 +144,7 @@ describe("re-approval", () => {
   describe("capabilities", () => {
     it("lists the modes its sources use and whether any is dynamic", async () => {
       const { capabilities } = await load()
-      expect(capabilities(uuidTools({ sources: [] }))).toEqual({ modes: [], dynamic: false })
+      expect(capabilities(uuidTools({ sources: [] }))).toEqual({ modes: [], dynamic: false, tab: "none", query: false })
       expect(
         capabilities(
           uuidTools({
@@ -152,9 +153,10 @@ describe("re-approval", () => {
               { id: "b", mode: "commands", dynamic: true },
               { id: "c", mode: "tabs" },
             ],
+            access: { tab: "origin", query: true },
           }),
         ),
-      ).toEqual({ modes: ["commands", "tabs"], dynamic: true })
+      ).toEqual({ modes: ["commands", "tabs"], dynamic: true, tab: "origin", query: true })
     })
   })
 
@@ -174,6 +176,18 @@ describe("re-approval", () => {
       const { exceeds } = await load()
       expect(exceeds({ modes: ["commands", "tabs"], dynamic: false }, approved)).toBe(true)
       expect(exceeds({ modes: ["commands"], dynamic: true }, approved)).toBe(true)
+    })
+
+    it("is true for more tab access or query access", async () => {
+      const { exceeds } = await load()
+      const origin = { ...approved, tab: "origin" as const, query: false }
+      expect(exceeds({ ...approved, tab: "none" }, origin)).toBe(false)
+      expect(exceeds({ ...approved, tab: "origin" }, origin)).toBe(false)
+      expect(exceeds({ ...approved, tab: "url" }, origin)).toBe(true)
+      expect(exceeds({ ...approved, tab: "origin", query: true }, origin)).toBe(true)
+      // Approvals recorded before access existed count as no access.
+      expect(exceeds({ ...approved, tab: "none", query: false }, approved)).toBe(false)
+      expect(exceeds({ ...approved, tab: "origin" }, approved)).toBe(true)
     })
   })
 
@@ -202,6 +216,13 @@ describe("re-approval", () => {
       ).toBe("pending")
     })
 
+    it("asks again when an allowed plugin asks to see more", async () => {
+      const { nextStatus } = await load()
+      expect(nextStatus(stored({ approved }), uuidTools({ access: { tab: "url" } }))).toBe("pending")
+      expect(nextStatus(stored({ approved }), uuidTools({ access: { query: true } }))).toBe("pending")
+      expect(nextStatus(stored({ approved }), uuidTools({ access: { tab: "none" } }))).toBe("allowed")
+    })
+
     it("treats the stored registration as approved for plugins allowed before snapshots", async () => {
       const { nextStatus } = await load()
       expect(nextStatus(stored(), uuidTools({ commands: [] }))).toBe("allowed")
@@ -218,7 +239,13 @@ describe("re-approval", () => {
 
       expect(await savePlugin("plugin", uuidTools())).toBe("pending")
       await setStatus("plugin", "allowed")
-      expect((await getPlugins())[0].approved).toEqual({ name: "UUID tools", modes: ["commands"], dynamic: false })
+      expect((await getPlugins())[0].approved).toEqual({
+        name: "UUID tools",
+        modes: ["commands"],
+        dynamic: false,
+        tab: "none",
+        query: false,
+      })
 
       expect(await savePlugin("plugin", uuidTools({ commands: [] }))).toBe("allowed")
       expect(await status()).toBe("allowed")
@@ -246,7 +273,95 @@ describe("re-approval", () => {
       mockStorage({ "externalPlugin:plugin": stored() })
       const { getPlugins, savePlugin } = await load()
       expect(await savePlugin("plugin", uuidTools({ commands: [] }))).toBe("allowed")
-      expect((await getPlugins())[0].approved).toEqual({ name: "UUID tools", modes: ["commands"], dynamic: false })
+      expect((await getPlugins())[0].approved).toEqual({
+        name: "UUID tools",
+        modes: ["commands"],
+        dynamic: false,
+        tab: "none",
+        query: false,
+      })
     })
+  })
+})
+
+const register = (access: unknown) => cleanRegistration({ name: "Test", access }, "plugin-id")?.access
+
+const tab = {
+  id: 7,
+  windowId: 2,
+  url: "https://mail.example.com/inbox?token=secret#msg",
+  title: "Inbox (3)",
+} as chrome.tabs.Tab
+
+describe("cleanRegistration access", () => {
+  it("defaults to no tab and no query", () => {
+    expect(register(undefined)).toEqual({ tab: "none", query: false })
+    expect(register({})).toEqual({ tab: "none", query: false })
+  })
+
+  it("keeps valid values", () => {
+    expect(register({ tab: "origin" })).toEqual({ tab: "origin", query: false })
+    expect(register({ tab: "url", query: true })).toEqual({ tab: "url", query: true })
+  })
+
+  it("drops anything else", () => {
+    expect(register("all")).toEqual({ tab: "none", query: false })
+    expect(register({ tab: "everything", query: "yes" })).toEqual({ tab: "none", query: false })
+    expect(register({ tab: ["url"], query: 1 })).toEqual({ tab: "none", query: false })
+  })
+})
+
+describe("tabInfo", () => {
+  it("sends nothing without access", () => {
+    expect(tabInfo(tab, undefined)).toBeUndefined()
+    expect(tabInfo(tab, {})).toBeUndefined()
+    expect(tabInfo(tab, { tab: "none" })).toBeUndefined()
+  })
+
+  it("sends only the origin with origin access", () => {
+    expect(tabInfo(tab, { tab: "origin" })).toEqual({ origin: "https://mail.example.com" })
+  })
+
+  it("sends nothing for origin access on pages without one", () => {
+    for (const url of ["chrome://newtab/", "file:///Users/me/notes.txt", "data:text/html,hi", "", undefined]) {
+      expect(tabInfo({ ...tab, url }, { tab: "origin" })).toBeUndefined()
+    }
+  })
+
+  it("sends the address, title and IDs with url access", () => {
+    expect(tabInfo(tab, { tab: "url" })).toEqual({
+      origin: "https://mail.example.com",
+      id: 7,
+      windowId: 2,
+      url: "https://mail.example.com/inbox?token=secret#msg",
+      title: "Inbox (3)",
+    })
+  })
+
+  it("sends nothing without a tab", () => {
+    expect(tabInfo(undefined, { tab: "url" })).toBeUndefined()
+  })
+})
+
+describe("shared", () => {
+  it("empties the query without query access", () => {
+    expect(shared({ tab: "url" }, { tab, query: "hunter2" }).query).toBe("")
+    expect(shared(undefined, { tab, query: "hunter2" })).toEqual({ query: "", tab: undefined })
+  })
+
+  it("sends the query with query access", () => {
+    expect(shared({ query: true }, { tab, query: "hunter2" })).toEqual({ query: "hunter2", tab: undefined })
+  })
+})
+
+describe("describeAccess", () => {
+  it("says what the plugin sees", () => {
+    expect(describeAccess(undefined)).toBe("Doesn't see your tabs or what you type")
+    expect(describeAccess({ tab: "none", query: false })).toBe("Doesn't see your tabs or what you type")
+    expect(describeAccess({ tab: "origin" })).toBe("Sees the current tab's site")
+    expect(describeAccess({ query: true })).toBe("Sees what you type in the palette")
+    expect(describeAccess({ tab: "url", query: true })).toBe(
+      "Sees the current tab's address and title, and what you type in the palette",
+    )
   })
 })

@@ -10,6 +10,7 @@ import {
   type Effect,
   type ItemData,
   type ModeId,
+  type PluginAccess,
   type RegisterResponse,
   type Registration,
   type TabInfo,
@@ -22,9 +23,12 @@ export * from "./protocol.js"
 type Awaitable<T> = T | Promise<T>
 
 export interface Context {
-  /** The current search text. */
+  /** The current search text. Always empty unless you declare `access.query`. */
   query: string
-  /** The tab the palette was opened from. */
+  /**
+   * The tab the palette was opened from. Missing unless you declare
+   * `access.tab`, and only `origin` with "origin" access.
+   */
   tab?: TabInfo
 }
 
@@ -41,7 +45,7 @@ export interface Item extends Omit<ItemData, "hasChildren" | "childrenPlaceholde
 export interface Source {
   id: string
   mode: ModeId
-  /** Re-run `items` on every keystroke. */
+  /** Re-run `items` on every keystroke. Needs `access.query`, or it runs once like a static source. */
   dynamic?: boolean
   items(ctx: Context): Awaitable<Item[]>
 }
@@ -54,6 +58,11 @@ export interface PluginDefinition {
   commands?: Item[]
   /** Items computed when the palette opens, or as the user types. */
   sources?: Source[]
+  /**
+   * What your plugin sees in `ctx`: the current tab and what the user types.
+   * Shown to the user when they approve the plugin. Defaults to nothing.
+   */
+  access?: PluginAccess
   /** Override Palette's extension ID, e.g. for a development build. */
   paletteId?: string
 }
@@ -89,6 +98,7 @@ export function definePalettePlugin(definition: PluginDefinition): PalettePlugin
         description: definition.description,
         commands: commands.map(toData),
         sources: sources.map(({ id, mode, dynamic }) => ({ id, mode, dynamic })),
+        access: definition.access,
       } satisfies Registration,
     })
 
