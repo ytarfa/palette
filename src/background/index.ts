@@ -4,7 +4,7 @@
  * (chrome://, the Web Store, the new tab page).
  */
 import { PROTOCOL, type RegisterResponse, type ToPalette } from "@palette/sdk"
-import { cleanRegistration, removePlugin, savePlugin, updateBadge } from "@/core/external"
+import { cleanRegistration, registrationError, removePlugin, savePlugin, updateBadge } from "@/core/external"
 import {
   PENDING_MODE_KEY,
   type ClaimFrameMessage,
@@ -84,10 +84,16 @@ chrome.runtime.onMessageExternal.addListener((message: ToPalette, sender, sendRe
       await removePlugin(pluginId)
       return { ok: true, status: "denied" }
     }
-    const registration = message.type === "register" && cleanRegistration(message.plugin, pluginId)
+    if (message.type !== "register") return { ok: false, error: "Invalid registration" }
+    const error = registrationError(message.plugin)
+    if (error) return { ok: false, error }
+    const registration = cleanRegistration(message.plugin, pluginId)
     if (!registration) return { ok: false, error: "Invalid registration" }
     return { ok: true, status: await savePlugin(pluginId, registration) }
-  })().then(sendResponse)
+  })()
+    // A failed storage write (e.g. over quota) still gets an answer.
+    .catch((e: unknown): RegisterResponse => ({ ok: false, error: `Couldn't save the plugin: ${String(e)}` }))
+    .then(sendResponse)
   return true
 })
 
