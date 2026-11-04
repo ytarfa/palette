@@ -12,6 +12,10 @@
 </p>
 
 <p align="center">
+  <a href="https://ytarfa.github.io/palette/"><b>📖 Read the full documentation</b></a>
+</p>
+
+<p align="center">
   <a href="#install">Install</a> ·
   <a href="#highlights">Highlights</a> ·
   <a href="#keyboard">Keyboard</a> ·
@@ -37,7 +41,7 @@ Code editors have a command palette: one shortcut, type a few letters, done. Thi
 </p>
 
 <p align="center">
-  <a href="https://github.com/ytarfa/palette/releases/latest/download/palette.zip"><b>Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">How to install</a>
+  <a href="https://github.com/ytarfa/palette/releases/latest/download/palette.zip"><b>Download the latest release</b></a> &nbsp;·&nbsp; <a href="#install">How to install</a> &nbsp;·&nbsp; <a href="https://ytarfa.github.io/palette/">Documentation</a>
 </p>
 
 ## Highlights
@@ -343,6 +347,7 @@ src/config/            Chrome's default shortcuts, shown next to commands
 src/components/ui/     shadcn/ui components
 packages/sdk/          @palette/sdk, for plugins in other extensions
 examples/toolbox/      Example plugin extension
+docs-site/             The documentation site (Astro Starlight)
 scripts/               README image rendering
 docs/                  README banners, screenshots and demo GIFs
 ```
@@ -354,6 +359,7 @@ docs/                  README banners, screenshots and demo GIFs
 | `pnpm --filter palette-toolbox build` | Builds the example plugin into `examples/toolbox/dist/` |
 | `pnpm test` | Runs the tests (Vitest) |
 | `pnpm lint` | Lints with oxlint |
+| `pnpm docs:dev` | Serves the documentation site with live reload |
 | `pnpm render:readme` | Re-renders the images in `docs/` with your installed Chrome (and ffmpeg for the GIFs), using the real palette from `dist/` and a set of demo tabs. Pass file names to render only those |
 
 ### Continuous integration and releases

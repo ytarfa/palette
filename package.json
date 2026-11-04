@@ -12,6 +12,8 @@
     "lint": "oxlint",
     "render:readme": "node scripts/render-readme-assets.mjs",
     "build:sdk": "pnpm --filter @palette/sdk build",
+    "docs:dev": "pnpm --filter palette-docs dev",
+    "docs:build": "pnpm --filter palette-docs build",
     "test": "vitest run"
   },
   "dependencies": {

@@ -43,3 +43,6 @@ jobs:
 
       - name: Build example plugin
         run: pnpm --filter palette-toolbox build
+
+      - name: Build docs
+        run: pnpm docs:build

@@ -1,0 +1,13 @@
+---
+// Like ThemeImage, for animated GIFs, which Astro's image pipeline would flatten.
+interface Props {
+  light: { src: string }
+  dark: { src: string }
+  alt: string
+}
+
+const { light, dark, alt } = Astro.props
+---
+
+<img src={light.src} alt={alt} class="screenshot dark:sl-hidden" />
+<img src={dark.src} alt={alt} class="screenshot light:sl-hidden" />

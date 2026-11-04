@@ -13,6 +13,8 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+      - "docs-site/**"
+      - ".github/workflows/docs.yml"
       - "scripts/readme/**"
   workflow_dispatch:
 

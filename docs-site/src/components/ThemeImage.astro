@@ -1,0 +1,17 @@
+---
+// Shows the light or dark variant of a screenshot, following Starlight's theme
+// switch rather than only the system setting.
+import { Image } from "astro:assets"
+import type { ImageMetadata } from "astro"
+
+interface Props {
+  light: ImageMetadata
+  dark: ImageMetadata
+  alt: string
+}
+
+const { light, dark, alt } = Astro.props
+---
+
+<Image src={light} alt={alt} class="screenshot dark:sl-hidden" />
+<Image src={dark} alt={alt} class="screenshot light:sl-hidden" />

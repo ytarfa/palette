@@ -1,0 +1,57 @@
+name: Docs
+
+# Builds docs-site/ and publishes it to GitHub Pages at
+# https://ytarfa.github.io/palette/. Needs Settings → Pages → Source set to
+# "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs-site/**"
+      - "docs/**"
+      - "packages/sdk/src/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build docs
+        run: pnpm docs:build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs-site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
