@@ -3,6 +3,7 @@
  * - embedded: in an iframe the content script injects into the page
  * - popup: as the toolbar popup, used on pages without a content script
  */
+import type { PaletteContext } from "@/core/types"
 import { PENDING_MODE_KEY, sendToBackground, type FromFrame, type ModeId, type ToFrame } from "@/shared/messages"
 
 export const embedded = window.parent !== window
@@ -79,4 +80,9 @@ export async function copyText(text: string) {
     document.execCommand("copy")
     textarea.remove()
   }
+}
+
+/** The context commands run with, backed by whichever host the palette is in. */
+export function paletteContext(tab: chrome.tabs.Tab | undefined, query: string): PaletteContext {
+  return { tab, query, copy: copyText, conceal: concealPalette }
 }

@@ -1,68 +1,25 @@
-import { defaultFilter } from "cmdk"
-import { Check, ChevronRight, Globe, Puzzle, SquareChevronRight } from "lucide-react"
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandShortcut,
-} from "@/components/ui/command"
+import { Check, ChevronRight, SquareChevronRight } from "lucide-react"
+import { useEffect, useEffectEvent, useMemo, useReducer, useRef, type KeyboardEvent } from "react"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandList } from "@/components/ui/command"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { formatShortcut, formatShortcutText, isModKey, matchesShortcut } from "@/core/keys"
+import { formatShortcut, isModKey, matchesShortcut } from "@/core/keys"
 import { COMMANDS, TABS } from "@/core/modes"
-import { collect, type Registry } from "@/core/registry"
-import { getSettings, type Settings } from "@/core/settings"
-import type { Command as Item, Icon, PaletteContext, RunResult } from "@/core/types"
+import type { Registry } from "@/core/registry"
+import type { Awaitable, Command as Item, PaletteContext, RunResult } from "@/core/types"
 import { cn } from "@/lib/utils"
-import { closePalette, concealPalette, copyText, embedded, onHostMessage, post, takePendingMode } from "./host"
-
-/** A nested list pushed by an item with `children`. */
-interface Page {
-  title: string
-  placeholder?: string
-  items: NonNullable<Item["children"]>["items"]
-}
+import { closePalette, embedded, onHostMessage, paletteContext, post, takePendingMode } from "./host"
+import { ItemRow } from "./item-row"
+import { initialNavigation, navigate } from "./navigation"
+import { groupBy, search } from "./search"
+import { usePaletteItems } from "./use-items"
 
 // Start reading the popup's mode before React mounts (StrictMode runs effects twice).
 const pendingMode = embedded ? undefined : takePendingMode()
 
-// Scoring the title on its own lets "dupl" prefer "Duplicate tab" over "Close duplicate tabs".
-const score = (item: Item, search: string) =>
-  defaultFilter(item.title, search, [item.subtitle ?? "", ...(item.keywords ?? [])])
-
-/**
- * Filter and sort here rather than in cmdk: cmdk sorts by moving DOM nodes,
- * which goes wrong when items arrive asynchronously (dynamic and plugin items).
- * `alwaysShow` items stay, after the matches.
- */
-function search(items: Item[], query: string): Item[] {
-  const q = query.trim()
-  if (!q) return items
-  return items
-    .map((item) => ({ item, score: item.alwaysShow ? 0 : score(item, q) }))
-    .filter(({ item, score }) => item.alwaysShow || score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(({ item }) => item)
-}
-
 export function Palette({ registry }: { registry: Registry }) {
-  /** Bumps every time the palette opens; resets cmdk and reloads items. */
-  const [session, setSession] = useState(0)
-  const [loadedSession, setLoadedSession] = useState(0)
-  const [reloads, setReloads] = useState(0)
-  const [modeId, setModeId] = useState(TABS.id)
-  const [pages, setPages] = useState<Page[]>([])
-  const [query, setQuery] = useState("")
-  const [selected, setSelected] = useState("")
-  const [tab, setTab] = useState<chrome.tabs.Tab>()
-  const [settings, setSettings] = useState<Settings>()
-  const [staticItems, setStaticItems] = useState<Item[]>([])
-  const [dynamicItems, setDynamicItems] = useState<Item[]>([])
-  /** Feedback from the last run, e.g. "Copied by …", in the footer. */
-  const [notice, setNotice] = useState<string>()
+  const [{ session, modeId, pages, query, selected, notice }, dispatch] = useReducer(navigate, initialNavigation)
+  const page = pages.at(-1)
+  const { items, tab, loaded, reload } = usePaletteItems(registry, { session, modeId, page, query })
 
   const visible = useRef(!embedded)
   /** Holding ⌘⇧ and tapping P again walks the list; releasing ⌘ picks. */
@@ -72,76 +29,26 @@ export function Palette({ registry }: { registry: Registry }) {
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const mode = registry.mode(modeId)
-  const page = pages.at(-1)
-  const ctx: PaletteContext = { tab, query, copy: copyText, conceal: concealPalette }
+  const ctx = paletteContext(tab, query)
 
-  const items = useMemo(
-    () => (page ? staticItems : [...staticItems, ...dynamicItems]),
-    [page, staticItems, dynamicItems],
-  )
   const results = useMemo(() => search(items, query), [items, query])
   // Groups come out ordered by their best match, since `results` is sorted.
   const groups = useMemo(() => groupBy(results), [results])
   // Typing, changing mode or opening a sub-list resets `selected`; fall back to the top item.
   const selectedItem = results.find((item) => item.id === selected) ?? results[0]
 
-  const currentQuery = useEffectEvent(() => query)
-
-  // Static items: loaded on open, mode/page change, and after `keepOpen` runs.
-  useEffect(() => {
-    if (!session) return
-    const abort = new AbortController()
-    void (async () => {
-      const [[active], settings] = await Promise.all([
-        chrome.tabs.query({ active: true, currentWindow: true }),
-        getSettings(),
-      ])
-      const ctx: PaletteContext = { tab: active, query: currentQuery(), copy: copyText }
-      const next = page
-        ? await page.items(ctx)
-        : await collect(registry.sources(modeId, settings).filter((s) => !s.dynamic), ctx)
-      if (abort.signal.aborted) return
-      setTab(active)
-      setSettings(settings)
-      setStaticItems(next)
-      setLoadedSession(session)
-    })().catch((error) => console.error("[palette]", error))
-    return () => abort.abort()
-  }, [session, modeId, page, reloads, registry])
-
-  // Dynamic items: reloaded as the query changes.
-  useEffect(() => {
-    if (!session || page || !settings) return
-    const abort = new AbortController()
-    const sources = registry.sources(modeId, settings).filter((s) => s.dynamic)
-    void collect(sources, { tab, query, copy: copyText }).then((next) => {
-      if (!abort.signal.aborted) setDynamicItems(next)
-    })
-    return () => abort.abort()
-  }, [session, modeId, page, query, tab, settings, registry])
-
   // Only reveal the embedded frame once fresh items are rendered.
   useEffect(() => {
-    if (embedded && session && loadedSession === session && !visible.current) {
+    if (embedded && loaded && !visible.current) {
       visible.current = true
       post({ type: "show" })
     }
-  }, [session, loadedSession])
-
-  /** New query, new results: highlight the top one again. */
-  function changeQuery(value: string) {
-    setQuery(value)
-    setSelected("")
-    setNotice(undefined)
-  }
+  }, [session, loaded])
 
   function open(modeId: string) {
     clearTimeout(closeTimer.current)
     cycling.current = false
-    setModeId(modeId)
-    setPages([])
-    changeQuery("")
-    setSession((s) => s + 1)
+    dispatch({ type: "open", mode: modeId })
   }
 
   function close() {
@@ -153,9 +60,7 @@ export function Palette({ registry }: { registry: Registry }) {
 
   function switchMode(id: string) {
     cycling.current = false
-    setModeId(id)
-    setPages([])
-    changeQuery("")
+    dispatch({ type: "switchMode", mode: id })
   }
 
   /** ⌘⇧P / ⌘⇧K while open: same mode cycles (tabs) or toggles closed; other mode switches. */
@@ -171,19 +76,19 @@ export function Palette({ registry }: { registry: Registry }) {
     if (!els.length) return
     const index = els.findIndex((el) => el.dataset.selected === "true")
     const next = els[(index + 1) % els.length]
-    setSelected(next.dataset.value ?? "")
+    dispatch({ type: "select", id: next.dataset.value ?? "" })
     next.scrollIntoView({ block: "nearest" })
   }
 
-  async function perform(run: (ctx: PaletteContext) => RunResult | Promise<RunResult>) {
+  async function perform(run: (ctx: PaletteContext) => Awaitable<RunResult>) {
     let result: RunResult = undefined
     try {
       result = await run(ctx)
     } catch (error) {
       console.error("[palette]", error)
     }
-    if (result?.notice) setNotice(result.notice)
-    if (result?.keepOpen) setReloads((n) => n + 1)
+    if (result?.notice) dispatch({ type: "notice", notice: result.notice })
+    if (result?.keepOpen) reload()
     // Leave a notice up long enough to read before closing.
     else if (result?.notice) closeTimer.current = setTimeout(close, 1000)
     else close()
@@ -193,26 +98,20 @@ export function Palette({ registry }: { registry: Registry }) {
     cycling.current = false
     if (item.children) {
       const { placeholder, items } = item.children
-      setPages((pages) => [...pages, { title: item.title, placeholder, items }])
-      changeQuery("")
+      dispatch({ type: "push", page: { title: item.title, placeholder, items } })
     } else if (item.run) {
       void perform(item.run)
     }
   }
 
   function back() {
-    setPages((pages) => pages.slice(0, -1))
-    changeQuery("")
+    dispatch({ type: "back" })
   }
 
   function onQueryChange(value: string) {
     const match = page ? undefined : registry.matchPrefix(value)
-    if (match && match.mode.id !== modeId) {
-      setModeId(match.mode.id)
-      changeQuery(match.rest)
-    } else {
-      changeQuery(value)
-    }
+    if (match && match.mode.id !== modeId) dispatch({ type: "switchMode", mode: match.mode.id, query: match.rest })
+    else dispatch({ type: "query", query: value })
   }
 
   function onKeyDown(e: KeyboardEvent) {
@@ -284,7 +183,7 @@ export function Palette({ registry }: { registry: Registry }) {
       <Command
         shouldFilter={false}
         value={selectedItem?.id ?? ""}
-        onValueChange={setSelected}
+        onValueChange={(id) => dispatch({ type: "select", id })}
         onKeyDown={onKeyDown}
         vimBindings={false}
         loop
@@ -311,43 +210,14 @@ export function Palette({ registry }: { registry: Registry }) {
           ref={listRef}
           className={cn("p-1", embedded ? "max-h-[min(420px,60vh)]" : "h-[360px] max-h-none")}
         >
-          {loadedSession === session && <CommandEmpty>No results</CommandEmpty>}
+          {loaded && <CommandEmpty>No results</CommandEmpty>}
           {groups.map(([group, list]) => (
             <CommandGroup
               key={group}
               heading={group || undefined}
             >
               {list.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  value={item.id}
-                  onSelect={() => activate(item)}
-                  className="gap-2.5 py-2"
-                >
-                  <ItemIcon icon={item.icon} />
-                  <span className="max-w-[65%] shrink-0 truncate">{item.title}</span>
-                  {item.badge && (
-                    <span className="flex max-w-[30%] shrink-0 items-center gap-1 rounded-sm border px-1.5 text-[11px] text-muted-foreground">
-                      <Puzzle className="size-3" />
-                      <span className="truncate">{item.badge}</span>
-                    </span>
-                  )}
-                  {item.subtitle && (
-                    <span className="min-w-0 truncate text-xs text-muted-foreground">
-                      {item.subtitle}
-                    </span>
-                  )}
-                  {item.hint && (
-                    <CommandShortcut className="shrink-0 tracking-normal whitespace-nowrap">{item.hint}</CommandShortcut>
-                  )}
-                  {item.shortcut && <CommandShortcut>{formatShortcutText(item.shortcut)}</CommandShortcut>}
-                  {item.children && (
-                    <ChevronRight
-                      data-slot="command-shortcut"
-                      className="ml-auto text-muted-foreground"
-                    />
-                  )}
-                </CommandItem>
+                <ItemRow key={item.id} item={item} onSelect={() => activate(item)} />
               ))}
             </CommandGroup>
           ))}
@@ -381,19 +251,6 @@ export function Palette({ registry }: { registry: Registry }) {
   )
 }
 
-function ItemIcon({ icon }: { icon?: Icon }) {
-  const [failed, setFailed] = useState(false)
-  if (!icon) return <span className="size-4 shrink-0" />
-  if (typeof icon !== "string") {
-    const Component = icon
-    return <Component className="text-muted-foreground" />
-  }
-  if (failed) return <Globe className="text-muted-foreground" />
-  return (
-    <img src={icon} alt="" className="size-4 shrink-0 rounded-[3px]" onError={() => setFailed(true)} />
-  )
-}
-
 function Hint({ label, shortcut }: { label: string; shortcut: string }) {
   return (
     <span className="flex items-center gap-1.5">
@@ -405,14 +262,4 @@ function Hint({ label, shortcut }: { label: string; shortcut: string }) {
       </KbdGroup>
     </span>
   )
-}
-
-/** Group items by `group`, keeping first-seen order. Ungrouped items use "". */
-function groupBy(items: Item[]): [string, Item[]][] {
-  const groups = new Map<string, Item[]>()
-  for (const item of items) {
-    const key = item.group ?? ""
-    groups.set(key, [...(groups.get(key) ?? []), item])
-  }
-  return [...groups]
 }
