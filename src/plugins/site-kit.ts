@@ -7,9 +7,11 @@
  * doesn't break when the site changes its HTML. Use `runInPage` only when the
  * information isn't in the URL.
  */
-import { definePlugin, type Command, type Icon, type PaletteContext, type Plugin } from "@/core/types"
+import { COMMANDS } from "@/core/modes"
+import { definePlugin, type Awaitable, type Command, type Icon, type PaletteContext, type Plugin } from "@/core/types"
+import { openUrl, parseUrl } from "./browser"
 
-type Awaitable<T> = T | Promise<T>
+export { openUrl, parseUrl, runInPage } from "./browser"
 
 export interface SiteContext extends PaletteContext {
   /** The current tab's URL, parsed. */
@@ -54,14 +56,14 @@ export function defineSite(site: SiteDefinition): Plugin {
     enabledByDefault: site.enabledByDefault,
     sources: [
       {
-        mode: "commands",
+        mode: COMMANDS.id,
         async items(ctx) {
           const siteCtx = withUrl(ctx)
           return siteCtx ? (await site.commands(siteCtx)).map(grouped) : []
         },
       },
       {
-        mode: "commands",
+        mode: COMMANDS.id,
         dynamic: true,
         async items(ctx) {
           const siteCtx = withUrl(ctx)
@@ -93,7 +95,7 @@ export function navigate(id: string, title: string, url: string, options: ItemOp
         id: "new-tab",
         title: "New tab",
         shortcut: "mod+enter",
-        run: () => void chrome.tabs.create({ url }),
+        run: (ctx) => openUrl(ctx, url, { newTab: true }),
       },
     ],
   }
@@ -101,7 +103,7 @@ export function navigate(id: string, title: string, url: string, options: ItemOp
 
 /** Open a URL in a new tab, e.g. an external tool. */
 export function openInNewTab(id: string, title: string, url: string, options: ItemOptions = {}): Command {
-  return { id, title, ...options, run: () => void chrome.tabs.create({ url }) }
+  return { id, title, ...options, run: (ctx) => openUrl(ctx, url, { newTab: true }) }
 }
 
 /** Copy text. The text is shown as the subtitle unless one is given. */
@@ -109,21 +111,7 @@ export function copy(id: string, title: string, value: string, options: ItemOpti
   return { id, title, subtitle: value, ...options, run: (ctx) => ctx.copy(value) }
 }
 
-export async function openUrl(ctx: PaletteContext, url: string) {
-  if (ctx.tab?.id != null) await chrome.tabs.update(ctx.tab.id, { url })
-  else await chrome.tabs.create({ url })
-}
-
 export const markdownLink = (text: string, url: string) => `[${text.replace(/[[\]]/g, "\\$&")}](${url})`
-
-export function parseUrl(url: string | undefined): URL | undefined {
-  if (!url) return undefined
-  try {
-    return new URL(url)
-  } catch {
-    return undefined
-  }
-}
 
 /** Is the host one of these, or a subdomain of one? `hostIs(url, "atlassian.net")` */
 export function hostIs(url: URL, ...hosts: string[]): boolean {
@@ -138,19 +126,4 @@ export function withParams(url: URL | string, params: Record<string, string | un
     else next.searchParams.set(key, value)
   }
   return next.toString()
-}
-
-/**
- * Run a function in the page and return its result, for information that
- * isn't in the URL. The function is serialized: it can't use outer variables,
- * only its `args`.
- */
-export async function runInPage<Args extends unknown[], Result>(
-  ctx: PaletteContext,
-  func: (...args: Args) => Result,
-  ...args: Args
-): Promise<Awaited<Result> | undefined> {
-  if (ctx.tab?.id == null) return undefined
-  const [result] = await chrome.scripting.executeScript({ target: { tabId: ctx.tab.id }, func, args })
-  return result?.result as Awaited<Result> | undefined
 }

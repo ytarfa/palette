@@ -16,6 +16,7 @@ import {
   type TabInfo,
   type ToPlugin,
 } from "@palette/sdk"
+import { COMMANDS, TABS } from "./modes"
 import type { PaletteContext } from "./types"
 
 export interface StoredPlugin extends Registration {
@@ -74,7 +75,7 @@ export function nextStatus(stored: StoredPlugin | undefined, registration: Regis
 
 /** Each plugin has its own key, so one plugin can't make the others' writes fail. */
 const PREFIX = "externalPlugin:"
-const MODES = ["tabs", "commands"]
+const MODES = [TABS.id, COMMANDS.id]
 /** From least to most. */
 const TAB_ACCESS = ["none", "origin", "url"]
 

@@ -11,13 +11,14 @@ import {
   SlidersHorizontal,
 } from "lucide-react"
 import { definePlugin, type Command } from "@/core/types"
+import { openUrl } from "./browser"
 
 const page = (id: string, title: string, url: string, icon: Command["icon"]): Command => ({
   id,
   title,
   group: "Browser",
   icon,
-  run: () => void chrome.tabs.create({ url }),
+  run: (ctx) => openUrl(ctx, url, { newTab: true }),
 })
 
 /** ⌘⇧K — windows and browser pages. */

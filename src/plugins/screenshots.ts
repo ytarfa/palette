@@ -1,6 +1,6 @@
 import { Camera, FileImage, GalleryVerticalEnd, Image, ImageDown } from "lucide-react"
 import { definePlugin, type Command, type PaletteContext } from "@/core/types"
-import { parseUrl, runInPage } from "./site-kit"
+import { hasTab, parseUrl, runInPage } from "./browser"
 
 const GROUP = "Screenshot"
 
@@ -271,7 +271,7 @@ function saveFormats(capture: (ctx: PaletteContext, format: Format) => Promise<B
 /** Screenshots work on web pages: the content script, scripting and activeTab all need http(s). */
 const onWebPage = (ctx: PaletteContext) => {
   const protocol = parseUrl(ctx.tab?.url)?.protocol
-  return ctx.tab?.id != null && (protocol === "http:" || protocol === "https:")
+  return hasTab(ctx) && (protocol === "http:" || protocol === "https:")
 }
 
 

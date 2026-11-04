@@ -1,6 +1,6 @@
 import { BookOpenText, Moon, Printer } from "lucide-react"
 import { definePlugin, type PaletteContext } from "@/core/types"
-import { parseUrl, runInPage } from "./site-kit"
+import { parseUrl, runInPage } from "./browser"
 
 const GROUP = "View"
 

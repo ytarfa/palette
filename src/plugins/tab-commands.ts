@@ -21,10 +21,8 @@ import {
   Scan,
 } from "lucide-react"
 import { definePlugin, type PaletteContext } from "@/core/types"
-import { favicon, focusTab } from "./util"
-
-const tabId = (ctx: PaletteContext) => ctx.tab!.id!
-const hasTab = (ctx: PaletteContext) => ctx.tab?.id != null
+import { favicon, focusTab, hasTab, tabId } from "./browser"
+import { markdownLink } from "./site-kit"
 
 async function zoomBy(ctx: PaletteContext, delta: number) {
   const zoom = await chrome.tabs.getZoom(tabId(ctx))
@@ -226,7 +224,7 @@ export default definePlugin({
       group: "Page",
       icon: Copy,
       when: hasTab,
-      run: (ctx) => ctx.copy(`[${ctx.tab!.title}](${ctx.tab!.url})`),
+      run: (ctx) => ctx.copy(markdownLink(ctx.tab!.title ?? "", ctx.tab!.url ?? "")),
     },
     {
       id: "zoom-in",
