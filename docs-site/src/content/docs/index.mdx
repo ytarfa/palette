@@ -1,0 +1,83 @@
+---
+title: Palette
+description: A command palette for Chrome. Switch tabs and run commands without the mouse.
+template: splash
+hero:
+  tagline: Code editors have a command palette. One shortcut, type a few letters, done. Palette brings it to the browser.
+  actions:
+    - text: Install
+      link: guides/install/
+      icon: right-arrow
+    - text: Write a plugin
+      link: plugins/overview/
+      variant: minimal
+    - text: View on GitHub
+      link: https://github.com/ytarfa/palette
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components"
+import ThemeGif from "../../components/ThemeGif.astro"
+import ThemeImage from "../../components/ThemeImage.astro"
+import demo from "../../../../docs/demo.gif"
+import demoDark from "../../../../docs/demo-dark.gif"
+import tabs from "../../../../docs/screenshot-tabs.png"
+import tabsDark from "../../../../docs/screenshot-tabs-dark.png"
+import commands from "../../../../docs/screenshot-commands.png"
+import commandsDark from "../../../../docs/screenshot-commands-dark.png"
+import github from "../../../../docs/screenshot-github.png"
+import githubDark from "../../../../docs/screenshot-github-dark.png"
+import capture from "../../../../docs/screenshot-capture.png"
+import captureDark from "../../../../docs/screenshot-capture-dark.png"
+import cleanup from "../../../../docs/screenshot-cleanup.png"
+import cleanupDark from "../../../../docs/screenshot-cleanup-dark.png"
+import plugins from "../../../../docs/screenshot-plugins.png"
+import pluginsDark from "../../../../docs/screenshot-plugins-dark.png"
+
+<p style="text-align: center">
+  <kbd>⌘</kbd><kbd>⇧</kbd><kbd>P</kbd> jumps to any open tab &nbsp;·&nbsp; <kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd> runs any browser action
+</p>
+
+<ThemeGif
+  light={demo}
+  dark={demoDark}
+  alt="Opening the tab switcher with ⌘⇧P, typing “lin” to find the Linear tab, then typing “>” to switch to commands and “dupl” to find Duplicate tab"
+/>
+
+## Highlights
+
+<CardGrid>
+  <Card title="Tab switcher" icon="seti:folder">
+    <ThemeImage light={tabs} dark={tabsDark} alt="The tab switcher listing open tabs, most recently used first" />
+    Fuzzy search every open tab across all your windows, most recently used first. Hold <kbd>⌘</kbd><kbd>⇧</kbd> and tap <kbd>P</kbd> to walk down the list, let go to switch, just like in VS Code. [Keyboard](guides/keyboard/)
+  </Card>
+  <Card title="About 30 browser commands" icon="rocket">
+    <ThemeImage light={commands} dark={commandsDark} alt="The command list, with Chrome's shortcuts next to each command" />
+    Duplicate, pin, mute, reopen closed tab, close duplicates, move to another window, zoom and more. Chrome's own shortcuts sit next to them, so you learn them as you go. [All commands](guides/commands/)
+  </Card>
+  <Card title="Commands for 19 sites" icon="github">
+    <ThemeImage light={github} dark={githubDark} alt="GitHub commands on a pull request page" />
+    GitHub, Jira, Google Docs, YouTube, AWS and more. Copy a branch name, a clean link or a checkout command, or jump straight to the page you want. [Site commands](guides/site-commands/)
+  </Card>
+  <Card title="Copy and capture" icon="document">
+    <ThemeImage light={capture} dark={captureDark} alt="Copy commands and screenshot commands on an MDN article" />
+    Copy the visible area or the whole page as an image, or save it as PNG or JPG. Copy the URL without tracking parameters, a Markdown link, the selection as a quote, or the whole article as Markdown.
+  </Card>
+  <Card title="Tab cleanup" icon="approve-check">
+    <ThemeImage light={cleanup} dark={cleanupDark} alt="A preview of six tabs that haven't been used in a week, with how long ago each was used" />
+    Close every tab you haven't touched in a day, a week or a month. You see the list first, and pinned or playing tabs are never closed.
+  </Card>
+  <Card title="Plugins, on your terms" icon="puzzle">
+    <ThemeImage light={plugins} dark={pluginsDark} alt="Palette's settings, with one plugin allowed and another waiting for approval" />
+    Everything in the list is a plugin, and other extensions can add their own. Each one waits for your approval and only sees what it asked for. [Plugins](plugins/overview/)
+  </Card>
+</CardGrid>
+
+## And also
+
+- **Private.** Everything happens on your device. No network requests, no analytics, no data collected.
+- **Isolated from the page.** The palette runs in its own frame, so site styles can't break it and it can't break the site.
+- **Works everywhere.** On pages extensions can't touch, like `chrome://` pages and the new tab page, it opens from the toolbar instead.
+- **Yours to trim.** Turn any plugin, site or single command on or off in [settings](guides/settings/).
+- **Light and dark**, following your system.

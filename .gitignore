@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Docs site
+docs-site/.astro
+docs-site/src/content/docs/reference/sdk
