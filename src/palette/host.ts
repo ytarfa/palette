@@ -3,13 +3,7 @@
  * - embedded: in an iframe the content script injects into the page
  * - popup: as the toolbar popup, used on pages without a content script
  */
-import {
-  PENDING_MODE_KEY,
-  type ClaimFrameMessage,
-  type FromFrame,
-  type ModeId,
-  type ToFrame,
-} from "@/shared/messages"
+import { PENDING_MODE_KEY, sendToBackground, type FromFrame, type ModeId, type ToFrame } from "@/shared/messages"
 
 export const embedded = window.parent !== window
 
@@ -22,7 +16,7 @@ let token: string | undefined
  * (see src/background/frames.ts).
  */
 export const trusted: Promise<boolean> = embedded
-  ? chrome.runtime.sendMessage({ type: "palette:claim-frame" } satisfies ClaimFrameMessage).then(
+  ? sendToBackground({ type: "palette:claim-frame" }).then(
       (claimed: unknown) => {
         token = typeof claimed === "string" ? claimed : undefined
         return !!token

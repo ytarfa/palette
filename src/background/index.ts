@@ -5,19 +5,21 @@
  */
 import { PROTOCOL, type RegisterResponse, type ToPalette } from "@palette/sdk"
 import { cleanRegistration, registrationError, removePlugin, savePlugin, updateBadge } from "@/core/external"
+import { COMMANDS, TABS } from "@/core/modes"
+import type { Awaitable } from "@/core/types"
 import {
   PENDING_MODE_KEY,
-  type ClaimFrameMessage,
-  type FallbackMessage,
+  type BackgroundMessage,
+  type BackgroundRequestType,
+  type BackgroundResponse,
   type ModeId,
   type OpenMessage,
-  type RegisterFrameMessage,
 } from "@/shared/messages"
 import { claimFrame, forgetFrame, registerFrame } from "./frames"
 
 const COMMAND_MODES: Record<string, ModeId> = {
-  "open-tabs": "tabs",
-  "open-commands": "commands",
+  "open-tabs": TABS.id,
+  "open-commands": COMMANDS.id,
 }
 
 async function openPalette(mode: ModeId, tab?: chrome.tabs.Tab) {
@@ -43,21 +45,39 @@ chrome.commands.onCommand.addListener((command, tab) => {
   if (mode) void openPalette(mode, tab)
 })
 
-chrome.runtime.onMessage.addListener(
-  (message: FallbackMessage | RegisterFrameMessage | ClaimFrameMessage, sender, sendResponse) => {
-    if (message?.type === "palette:fallback") void openPopup(message.mode)
-    const tabId = sender.tab?.id
-    if (tabId == null) return
-    if (message?.type === "palette:register-frame") {
-      void registerFrame(tabId, message.token).then(() => sendResponse(true))
-      return true
-    }
-    if (message?.type === "palette:claim-frame") {
-      void claimFrame(tabId).then(sendResponse)
-      return true
-    }
-  },
-)
+/** One handler per message type. A handler's return value is the reply. */
+type Handlers = {
+  [T in BackgroundRequestType]: (
+    message: BackgroundMessage<T>,
+    sender: chrome.runtime.MessageSender,
+  ) => Awaitable<BackgroundResponse<T>>
+}
+
+/** The sender's tab. Frame messages only make sense from a tab. */
+function senderTab(sender: chrome.runtime.MessageSender): number {
+  const tabId = sender.tab?.id
+  if (tabId == null) throw new Error("Not sent from a tab")
+  return tabId
+}
+
+const handlers: Handlers = {
+  "palette:fallback": ({ mode }) => openPopup(mode),
+  "palette:register-frame": ({ token }, sender) => registerFrame(senderTab(sender), token),
+  "palette:claim-frame": (_, sender) => claimFrame(senderTab(sender)),
+}
+
+chrome.runtime.onMessage.addListener((message: BackgroundMessage | undefined, sender, sendResponse) => {
+  const type = message?.type
+  if (!type || !Object.hasOwn(handlers, type)) return
+  const handler = handlers[type] as (message: BackgroundMessage, sender: chrome.runtime.MessageSender) => unknown
+  Promise.resolve()
+    .then(() => handler(message, sender))
+    .then(sendResponse, (error: unknown) => {
+      console.error("[palette]", type, error)
+      sendResponse(undefined)
+    })
+  return true
+})
 
 chrome.tabs.onRemoved.addListener((tabId) => void forgetFrame(tabId))
 

@@ -6,14 +6,7 @@
  *
  * Built as a standalone IIFE (see vite.content.config.ts).
  */
-import type {
-  FallbackMessage,
-  FromFrame,
-  ModeId,
-  OpenMessage,
-  RegisterFrameMessage,
-  ToFrame,
-} from "@/shared/messages"
+import { sendToBackground, type FromFrame, type ModeId, type OpenMessage, type ToFrame } from "@/shared/messages"
 
 declare global {
   interface Window {
@@ -59,8 +52,7 @@ function createFrame() {
   document.documentElement.append(host)
   // The frame claims the token as it loads, so register it first.
   const iframe = frame
-  const message: RegisterFrameMessage = { type: "palette:register-frame", token }
-  void chrome.runtime.sendMessage(message).then(() => {
+  void sendToBackground({ type: "palette:register-frame", token }).then(() => {
     iframe.src = chrome.runtime.getURL("palette.html")
   })
 }
@@ -76,8 +68,7 @@ function open(mode: ModeId) {
     clearTimeout(readyTimer)
     readyTimer = window.setTimeout(() => {
       if (ready) return
-      const message: FallbackMessage = { type: "palette:fallback", mode }
-      void chrome.runtime.sendMessage(message)
+      void sendToBackground({ type: "palette:fallback", mode })
     }, 1500)
   }
 }
@@ -117,26 +108,25 @@ function unconceal() {
   host?.style.removeProperty("pointer-events")
 }
 
+function onReady() {
+  ready = true
+  clearTimeout(readyTimer)
+  if (pendingMode) post({ type: "open", mode: pendingMode })
+  pendingMode = undefined
+}
+
+/** What to do for each message from the frame. */
+const frameHandlers: Record<FromFrame["type"], () => void> = {
+  ready: onReady,
+  show,
+  close: hide,
+  conceal,
+}
+
 function onFrameMessage(e: MessageEvent) {
   if (!frame || e.source !== frame.contentWindow || e.origin !== frameOrigin) return
-  const data = e.data as FromFrame | undefined
-  switch (data?.type) {
-    case "ready":
-      ready = true
-      clearTimeout(readyTimer)
-      if (pendingMode) post({ type: "open", mode: pendingMode })
-      pendingMode = undefined
-      break
-    case "show":
-      show()
-      break
-    case "close":
-      hide()
-      break
-    case "conceal":
-      conceal()
-      break
-  }
+  const type = (e.data as FromFrame | undefined)?.type
+  if (type && Object.hasOwn(frameHandlers, type)) frameHandlers[type]()
 }
 
 function onRuntimeMessage(message: OpenMessage) {
