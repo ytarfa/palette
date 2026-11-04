@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react"
  * is contributed by a plugin. See `src/plugins` for examples.
  */
 
-type Awaitable<T> = T | Promise<T>
+export type Awaitable<T> = T | Promise<T>
 
 /** A Lucide icon component, or an image URL (e.g. a favicon). */
 export type Icon = LucideIcon | string

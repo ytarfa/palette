@@ -1,7 +1,8 @@
 import { Archive, Code, CornerLeftUp, Eraser, Globe, History, House, Link, Search, Type } from "lucide-react"
 import { COMMANDS } from "@/core/modes"
 import { definePlugin, type Command, type PaletteContext } from "@/core/types"
-import { copy, hostIs, navigate, openInNewTab, openUrl, parseUrl } from "./site-kit"
+import { openUrl, parseUrl } from "./browser"
+import { copy, hostIs, navigate, openInNewTab } from "./site-kit"
 
 const GROUP = "Page"
 

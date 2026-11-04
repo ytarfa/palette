@@ -9,9 +9,10 @@ import {
   shared,
   type StoredPlugin,
 } from "@/core/external"
-import { TABS } from "@/core/modes"
+import { COMMANDS, TABS } from "@/core/modes"
 import { builtInNames, pluginGroup, pluginName } from "@/core/plugin-names"
 import { definePlugin, type Command, type Plugin, type PaletteContext, type RunResult } from "@/core/types"
+import { openUrl } from "./browser"
 
 /** Folded names plugins can't use, set from the built-in plugins in ./index.ts. */
 let reserved = new Set<string>()
@@ -34,7 +35,7 @@ export const pluginRequests = definePlugin({
   category: "core",
   sources: [
     {
-      mode: "commands",
+      mode: COMMANDS.id,
       async items() {
         const pending = (await getPlugins()).filter((p) => p.status === "pending").length
         if (!pending) return []
@@ -99,7 +100,7 @@ export const externalPlugins = definePlugin({
       },
     },
   ],
-  sources: (["tabs", "commands"] as const).flatMap((mode) => [
+  sources: [TABS.id, COMMANDS.id].flatMap((mode) => [
     { mode, items: (ctx: PaletteContext) => load(mode, false, ctx) },
     { mode, dynamic: true, items: (ctx: PaletteContext) => load(mode, true, ctx) },
   ]),
@@ -110,7 +111,7 @@ async function load(mode: string, dynamic: boolean, ctx: PaletteContext): Promis
   const results = await Promise.allSettled(
     plugins.flatMap((plugin) => {
       const statics =
-        mode === "commands" && !dynamic
+        mode === COMMANDS.id && !dynamic
           ? [Promise.resolve(plugin.commands.map((item) => toCommand(plugin, item, {}, mode)))]
           : []
       // Without query access, a dynamic source is asked once like a static one:
@@ -196,8 +197,7 @@ async function applyEffect(ctx: PaletteContext, effect: Effect | undefined, name
     notice = `Copied by ${name}`
   }
   if (typeof effect.open === "string" && /^https?:\/\//i.test(effect.open)) {
-    if (effect.newTab || ctx.tab?.id == null) await chrome.tabs.create({ url: effect.open })
-    else await chrome.tabs.update(ctx.tab.id, { url: effect.open })
+    await openUrl(ctx, effect.open, { newTab: !!effect.newTab })
   }
   return { keepOpen: effect.keepOpen === true, notice }
 }

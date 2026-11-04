@@ -1,6 +1,6 @@
 import { Braces, Cookie, Eraser, FileText, Terminal, X } from "lucide-react"
 import { definePlugin, type Command, type PaletteContext } from "@/core/types"
-import { parseUrl } from "./site-kit"
+import { hasTab, parseUrl, tabId } from "./browser"
 
 const GROUP = "Site data"
 
@@ -93,7 +93,7 @@ export default definePlugin({
                     webSQL: true,
                   },
                 )
-                if (ctx.tab?.id != null) await chrome.tabs.reload(ctx.tab.id)
+                if (hasTab(ctx)) await chrome.tabs.reload(tabId(ctx))
               },
             },
             { id: "cancel", title: "Cancel", icon: X, run: () => {} },

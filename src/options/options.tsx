@@ -16,7 +16,7 @@ import {
   type Settings,
 } from "@/core/settings"
 import type { Plugin } from "@/core/types"
-import { favicon } from "@/plugins/util"
+import { favicon } from "@/plugins/browser"
 
 export function Options({ plugins }: { plugins: Plugin[] }) {
   const [settings, setSettings] = useState<Settings>()

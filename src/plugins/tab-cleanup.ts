@@ -1,6 +1,6 @@
 import { CalendarClock, ListX } from "lucide-react"
 import { definePlugin, type Command } from "@/core/types"
-import { favicon, focusTab, shortUrl } from "./util"
+import { favicon, focusTab, shortUrl } from "./browser"
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE

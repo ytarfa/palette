@@ -2,8 +2,9 @@ import { Readability } from "@mozilla/readability"
 import { FileText, TextQuote } from "lucide-react"
 import TurndownService from "turndown"
 import { definePlugin, type PaletteContext } from "@/core/types"
+import { parseUrl, runInPage } from "./browser"
 import { removeTrackingParams } from "./page-tools"
-import { markdownLink, parseUrl, runInPage } from "./site-kit"
+import { markdownLink } from "./site-kit"
 
 const GROUP = "Copy"
 

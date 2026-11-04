@@ -1,6 +1,7 @@
 import { Globe, Search } from "lucide-react"
 import { COMMANDS, TABS } from "@/core/modes"
 import { definePlugin, type Command, type PaletteContext } from "@/core/types"
+import { openUrl } from "./browser"
 
 /** Looks like something the user wants to visit rather than search for. */
 function asUrl(query: string): string | undefined {
@@ -31,7 +32,7 @@ function fallbacks(ctx: PaletteContext): Command[] {
       group: "Web",
       icon: Globe,
       alwaysShow: true,
-      run: () => void chrome.tabs.create({ url }),
+      run: () => openUrl(ctx, url, { newTab: true }),
     })
   }
   return items
